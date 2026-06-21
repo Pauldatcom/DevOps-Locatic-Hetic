@@ -33,8 +33,8 @@ namespace Locatic.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", nullable: false),
-                    email = table.Column<string>(type: "TEXT", nullable: false),
-                    telephone = table.Column<int>(type: "INTEGER", nullable: false)
+                    Email = table.Column<string>(type: "TEXT", nullable: false),
+                    Telephone = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,7 +47,7 @@ namespace Locatic.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    ModeleName = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
                     BrandId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
@@ -67,11 +67,11 @@ namespace Locatic.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    immatriculation = table.Column<int>(type: "INTEGER", nullable: false),
-                    year = table.Column<int>(type: "INTEGER", nullable: false),
-                    numberOfPlaces = table.Column<int>(type: "INTEGER", nullable: false),
-                    tarifPerDay = table.Column<int>(type: "INTEGER", nullable: false),
-                    typeOfFuel = table.Column<string>(type: "TEXT", nullable: false),
+                    Immatriculation = table.Column<string>(type: "TEXT", nullable: false),
+                    Year = table.Column<int>(type: "INTEGER", nullable: false),
+                    NumberOfPlaces = table.Column<int>(type: "INTEGER", nullable: false),
+                    TarifPerDay = table.Column<decimal>(type: "TEXT", nullable: false),
+                    TypeOfFuel = table.Column<string>(type: "TEXT", nullable: false),
                     ModeleId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
@@ -91,9 +91,9 @@ namespace Locatic.Migrations
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    dateOfBegin = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    dateOfEnd = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    clientId = table.Column<int>(type: "INTEGER", nullable: false),
+                    DateOfBegin = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    DateOfEnd = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    ClientId = table.Column<int>(type: "INTEGER", nullable: false),
                     CarId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
@@ -106,8 +106,8 @@ namespace Locatic.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Reservations_Clients_clientId",
-                        column: x => x.clientId,
+                        name: "FK_Reservations_Clients_ClientId",
+                        column: x => x.ClientId,
                         principalTable: "Clients",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -129,9 +129,9 @@ namespace Locatic.Migrations
                 column: "CarId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reservations_clientId",
+                name: "IX_Reservations_ClientId",
                 table: "Reservations",
-                column: "clientId");
+                column: "ClientId");
         }
 
         /// <inheritdoc />

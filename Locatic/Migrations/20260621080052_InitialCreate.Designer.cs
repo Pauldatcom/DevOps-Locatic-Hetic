@@ -10,14 +10,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Locatic.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260618194424_InitialCreate")]
+    [Migration("20260621080052_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "8.0.11");
 
             modelBuilder.Entity("Brand", b =>
                 {
@@ -44,23 +44,24 @@ namespace Locatic.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("ModeleId")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("immatriculation")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("numberOfPlaces")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("tarifPerDay")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("typeOfFuel")
+                    b.Property<string>("Immatriculation")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("year")
+                    b.Property<int>("ModeleId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NumberOfPlaces")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("TarifPerDay")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TypeOfFuel")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Year")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -76,6 +77,10 @@ namespace Locatic.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -84,12 +89,9 @@ namespace Locatic.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("email")
+                    b.Property<string>("Telephone")
                         .IsRequired()
                         .HasColumnType("TEXT");
-
-                    b.Property<int>("telephone")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
@@ -105,7 +107,7 @@ namespace Locatic.Migrations
                     b.Property<int>("BrandId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("ModeleName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
@@ -125,20 +127,20 @@ namespace Locatic.Migrations
                     b.Property<int>("CarId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("clientId")
+                    b.Property<int>("ClientId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("dateOfBegin")
+                    b.Property<DateTime>("DateOfBegin")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("dateOfEnd")
+                    b.Property<DateTime>("DateOfEnd")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CarId");
 
-                    b.HasIndex("clientId");
+                    b.HasIndex("ClientId");
 
                     b.ToTable("Reservations");
                 });
@@ -146,7 +148,7 @@ namespace Locatic.Migrations
             modelBuilder.Entity("Car", b =>
                 {
                     b.HasOne("Modele", "Modele")
-                        .WithMany()
+                        .WithMany("Cars")
                         .HasForeignKey("ModeleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -157,7 +159,7 @@ namespace Locatic.Migrations
             modelBuilder.Entity("Modele", b =>
                 {
                     b.HasOne("Brand", "Brand")
-                        .WithMany()
+                        .WithMany("Modeles")
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -168,20 +170,40 @@ namespace Locatic.Migrations
             modelBuilder.Entity("Reservation", b =>
                 {
                     b.HasOne("Car", "Car")
-                        .WithMany()
+                        .WithMany("Reservations")
                         .HasForeignKey("CarId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("clientId")
+                        .WithMany("Reservations")
+                        .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Car");
 
                     b.Navigation("Client");
+                });
+
+            modelBuilder.Entity("Brand", b =>
+                {
+                    b.Navigation("Modeles");
+                });
+
+            modelBuilder.Entity("Car", b =>
+                {
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("Client", b =>
+                {
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("Modele", b =>
+                {
+                    b.Navigation("Cars");
                 });
 #pragma warning restore 612, 618
         }

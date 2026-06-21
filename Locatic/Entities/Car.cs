@@ -1,15 +1,14 @@
-using System.Diagnostics.CodeAnalysis;
-
 public class Car 
 {
-    public int Id {get; set;}
-    public int immatriculation {get; set;}
-    public int year {get; set;}
-    public int numberOfPlaces {get; set;}
-    public int tarifPerDay {get; set;}
-    public required string typeOfFuel {get; set;}
+    public int Id { get; set; }
+    public required string Immatriculation { get; set; }
+    public int Year { get; set; }
+    public int NumberOfPlaces { get; set; }
+    public decimal TarifPerDay { get; set; }
+    public required string TypeOfFuel { get; set; }
 
-    public int ModeleId {get; set;}
-    public required Modele Modele {get; set;}
+    public int ModeleId { get; set; }
+    public required Modele Modele { get; set; }
 
+    public ICollection<Reservation> Reservations { get; set; } = new List<Reservation>();
 }
