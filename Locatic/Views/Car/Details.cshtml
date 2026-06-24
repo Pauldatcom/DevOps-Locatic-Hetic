@@ -1,0 +1,50 @@
+@model Locatic.Entities.Car
+
+<h1>Détails de la voiture</h1>
+
+<div class="card">
+    <div class="card-body">
+
+        <p>
+            <strong>Immatriculation :</strong>
+            @Model.RegistrationNumber
+        </p>
+
+        <p>
+            <strong>Année :</strong>
+            @Model.Year
+        </p>
+
+        <p>
+            <strong>Nombre de places :</strong>
+            @Model.NumberOfPlaces
+        </p>
+
+        <p>
+            <strong>Tarif journalier :</strong>
+            @Model.PricePerDay €
+        </p>
+
+        <p>
+            <strong>Carburant :</strong>
+            @Model.FuelType
+        </p>
+
+        <p>
+            <strong>Modèle :</strong>
+            @Model.Modele.Name
+        </p>
+
+        <p>
+            <strong>Marque :</strong>
+            @Model.Modele.Brand.Name
+        </p>
+
+    </div>
+</div>
+
+<br />
+
+<a asp-action="Index" class="btn btn-secondary">
+    Retour
+</a>
