@@ -37,9 +37,7 @@ public class CarController : Controller
     [HttpGet]
     public async Task<IActionResult> Create()
     {
-        var modeles = await _modeleService.GetAllAsync();
-        ViewBag.Modeles = new SelectList(modeles, "Id", "Name");
-
+        await LoadModeles();
         return View();
     }
 
@@ -48,14 +46,65 @@ public class CarController : Controller
     {
         if (!ModelState.IsValid)
         {
-            var modeles = await _modeleService.GetAllAsync();
-            ViewBag.Modeles = new SelectList(modeles, "Id", "Name");
-
+            await LoadModeles();
             return View(car);
         }
 
         await _carService.CreateAsync(car);
-
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var car = await _carService.GetByIdAsync(id);
+
+        if (car == null)
+        {
+            return NotFound();
+        }
+
+        await LoadModeles();
+        return View(car);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Edit(Car car)
+    {
+        if (!ModelState.IsValid)
+        {
+            await LoadModeles();
+            return View(car);
+        }
+
+        await _carService.UpdateAsync(car);
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var car = await _carService.GetByIdAsync(id);
+
+        if (car == null)
+        {
+            return NotFound();
+        }
+
+        return View(car);
+    }
+
+    [HttpPost]
+    [ActionName("Delete")]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        await _carService.DeleteAsync(id);
+        return RedirectToAction(nameof(Index));
+    }
+
+    private async Task LoadModeles()
+    {
+        var modeles = await _modeleService.GetAllAsync();
+        ViewBag.Modeles = new SelectList(modeles, "Id", "Name");
     }
 }
