@@ -3,11 +3,13 @@
 <h1>Liste des réservations</h1>
 
 <p>
-    <a asp-action="Create" class="btn btn-primary">Ajouter une réservation</a>
+    <a asp-action="Create" class="btn btn-primary">
+        Ajouter une réservation
+    </a>
 </p>
 
-<table class="table">
-    <thead>
+<table class="table table-striped">
+    <thead class="table-dark">
         <tr>
             <th>Client</th>
             <th>Voiture</th>
@@ -15,6 +17,7 @@
             <th>Marque</th>
             <th>Date début</th>
             <th>Date fin</th>
+            <th>Montant total</th>
         </tr>
     </thead>
     <tbody>
@@ -27,6 +30,7 @@
                 <td>@reservation.Car.Modele.Brand.Name</td>
                 <td>@reservation.StartDate.ToShortDateString()</td>
                 <td>@reservation.EndDate.ToShortDateString()</td>
+                <td>@reservation.TotalPrice.ToString("0.00") €</td>
             </tr>
         }
     </tbody>
