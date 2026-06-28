@@ -1,0 +1,23 @@
+@model Locatic.Entities.Modele
+
+<h1>Ajouter un modèle</h1>
+
+<form asp-action="Create" method="post">
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label">Nom du modèle</label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="BrandId" class="form-label">Marque</label>
+        <select asp-for="BrandId" asp-items="ViewBag.Brands" class="form-control">
+            <option value="">-- Choisir une marque --</option>
+        </select>
+        <span asp-validation-for="BrandId" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-success">Enregistrer</button>
+
+</form>

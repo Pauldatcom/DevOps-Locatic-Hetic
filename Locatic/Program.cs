@@ -1,16 +1,36 @@
+using Locatic.Data;
+using Locatic.Services.Implementations;
+using Locatic.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+    )
+);
+
+builder.Services.AddScoped<IBrandService, BrandService>();
+builder.Services.AddScoped<IModeleService, ModeleService>();
+builder.Services.AddScoped<ICarService, CarService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IReservationService, ReservationService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    DbSeeder.Seed(context);
 }
 
 app.UseHttpsRedirection();
@@ -22,6 +42,7 @@ app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}"
+);
 
 app.Run();

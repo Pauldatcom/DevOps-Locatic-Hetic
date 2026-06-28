@@ -1,0 +1,148 @@
+@model DashboardViewModel
+
+@{
+    ViewData["Title"] = "Administration";
+}
+
+<div class="admin-page">
+    <div class="admin-page-header">
+        <h1>Administration</h1>
+        <p>Gérez la flotte, les réservations et les clients de l'agence.</p>
+    </div>
+
+    <div class="admin-stats row g-3 mb-4">
+        <div class="col-6 col-md">
+            <div class="admin-stat-card">
+                <span class="admin-stat-value">@Model.CarCount</span>
+                <span class="admin-stat-label">Voitures</span>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="admin-stat-card">
+                <span class="admin-stat-value">@Model.ReservationCount</span>
+                <span class="admin-stat-label">Réservations</span>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="admin-stat-card">
+                <span class="admin-stat-value">@Model.ClientCount</span>
+                <span class="admin-stat-label">Clients</span>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="admin-stat-card">
+                <span class="admin-stat-value">@Model.ModeleCount</span>
+                <span class="admin-stat-label">Modèles</span>
+            </div>
+        </div>
+        <div class="col-6 col-md">
+            <div class="admin-stat-card">
+                <span class="admin-stat-value">@Model.BrandCount</span>
+                <span class="admin-stat-label">Marques</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <section class="admin-section-card">
+                <h2>Flotte automobile</h2>
+                <p class="admin-section-desc">Gérez les véhicules disponibles à la location.</p>
+                <div class="admin-action-list">
+                    <a asp-controller="Car" asp-action="Index" class="admin-action-item">
+                        <span class="admin-action-icon">📋</span>
+                        <span>
+                            <strong>Liste des voitures</strong>
+                            <small>Voir, modifier ou supprimer</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Car" asp-action="Create" class="admin-action-item">
+                        <span class="admin-action-icon">➕</span>
+                        <span>
+                            <strong>Ajouter une voiture</strong>
+                            <small>Immatriculation, places, prix, image</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Modele" asp-action="Index" class="admin-action-item">
+                        <span class="admin-action-icon">🚘</span>
+                        <span>
+                            <strong>Modèles</strong>
+                            <small>@Model.ModeleCount modèle(s) enregistré(s)</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Modele" asp-action="Create" class="admin-action-item">
+                        <span class="admin-action-icon">➕</span>
+                        <span>
+                            <strong>Ajouter un modèle</strong>
+                            <small>Associer à une marque</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Brand" asp-action="Index" class="admin-action-item">
+                        <span class="admin-action-icon">🏷</span>
+                        <span>
+                            <strong>Marques</strong>
+                            <small>@Model.BrandCount marque(s) enregistrée(s)</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Brand" asp-action="Create" class="admin-action-item">
+                        <span class="admin-action-icon">➕</span>
+                        <span>
+                            <strong>Ajouter une marque</strong>
+                            <small>Nom et pays</small>
+                        </span>
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-6">
+            <section class="admin-section-card">
+                <h2>Réservations</h2>
+                <p class="admin-section-desc">Suivez et créez des réservations manuellement.</p>
+                <div class="admin-action-list">
+                    <a asp-controller="Reservation" asp-action="Index" class="admin-action-item">
+                        <span class="admin-action-icon">📅</span>
+                        <span>
+                            <strong>Toutes les réservations</strong>
+                            <small>@Model.ReservationCount réservation(s) au total</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Reservation" asp-action="Create" class="admin-action-item">
+                        <span class="admin-action-icon">➕</span>
+                        <span>
+                            <strong>Créer une réservation</strong>
+                            <small>Pour un client existant</small>
+                        </span>
+                    </a>
+                </div>
+            </section>
+
+            <section class="admin-section-card mt-4">
+                <h2>Clients</h2>
+                <p class="admin-section-desc">Gérez la base clients de l'agence.</p>
+                <div class="admin-action-list">
+                    <a asp-controller="Client" asp-action="Index" class="admin-action-item">
+                        <span class="admin-action-icon">👤</span>
+                        <span>
+                            <strong>Liste des clients</strong>
+                            <small>@Model.ClientCount client(s) enregistré(s)</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Client" asp-action="Create" class="admin-action-item">
+                        <span class="admin-action-icon">➕</span>
+                        <span>
+                            <strong>Ajouter un client</strong>
+                            <small>Nom, e-mail, téléphone</small>
+                        </span>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="admin-back-public mt-4">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+            ← Retour au site public
+        </a>
+    </div>
+</div>

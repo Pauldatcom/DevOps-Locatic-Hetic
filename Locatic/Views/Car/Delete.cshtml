@@ -1,0 +1,21 @@
+@model Locatic.Entities.Car
+
+<h1>Supprimer une voiture</h1>
+
+<p>Voulez-vous vraiment supprimer cette voiture ?</p>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <p><strong>Immatriculation :</strong> @Model.RegistrationNumber</p>
+        <p><strong>Année :</strong> @Model.Year</p>
+        <p><strong>Modèle :</strong> @Model.Modele.Name</p>
+        <p><strong>Marque :</strong> @Model.Modele.Brand.Name</p>
+    </div>
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <button type="submit" class="btn btn-danger">Supprimer</button>
+    <a asp-action="Index" class="btn btn-secondary">Annuler</a>
+</form>

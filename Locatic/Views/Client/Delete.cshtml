@@ -1,0 +1,35 @@
+@model Locatic.Entities.Client
+
+<h1>Supprimer un client</h1>
+
+<div class="alert alert-warning">
+    Êtes-vous sûr de vouloir supprimer ce client ?
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+
+        <p><strong>Nom :</strong> @Model.LastName</p>
+
+        <p><strong>Prénom :</strong> @Model.FirstName</p>
+
+        <p><strong>Email :</strong> @Model.Email</p>
+
+        <p><strong>Téléphone :</strong> @Model.PhoneNumber</p>
+
+    </div>
+</div>
+
+<form asp-action="Delete" method="post">
+
+    <input type="hidden" asp-for="Id" />
+
+    <button class="btn btn-danger" type="submit">
+        Supprimer
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Annuler
+    </a>
+
+</form>

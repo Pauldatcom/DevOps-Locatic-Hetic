@@ -1,0 +1,37 @@
+@model IEnumerable<Locatic.Entities.Reservation>
+
+<h1>Liste des réservations</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">
+        Ajouter une réservation
+    </a>
+</p>
+
+<table class="table table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Client</th>
+            <th>Voiture</th>
+            <th>Modèle</th>
+            <th>Marque</th>
+            <th>Date début</th>
+            <th>Date fin</th>
+            <th>Montant total</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var reservation in Model)
+        {
+            <tr>
+                <td>@reservation.Client.LastName @reservation.Client.FirstName</td>
+                <td>@reservation.Car.RegistrationNumber</td>
+                <td>@reservation.Car.Modele.Name</td>
+                <td>@reservation.Car.Modele.Brand.Name</td>
+                <td>@reservation.StartDate.ToShortDateString()</td>
+                <td>@reservation.EndDate.ToShortDateString()</td>
+                <td>@reservation.TotalPrice.ToString("0.00") €</td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,63 @@
+@model Locatic.ViewModels.CarViewModel
+
+<h1>Modifier une voiture</h1>
+
+<form asp-action="Edit" method="post" enctype="multipart/form-data">
+
+    <input type="hidden" asp-for="Id" />
+
+    <div class="mb-3">
+        <label asp-for="RegistrationNumber" class="form-label"></label>
+        <input asp-for="RegistrationNumber" class="form-control" />
+        <span asp-validation-for="RegistrationNumber" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Year" class="form-label"></label>
+        <input asp-for="Year" class="form-control" />
+        <span asp-validation-for="Year" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="NumberOfPlaces" class="form-label"></label>
+        <input asp-for="NumberOfPlaces" class="form-control" />
+        <span asp-validation-for="NumberOfPlaces" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="PricePerDay" class="form-label"></label>
+        <input asp-for="PricePerDay" class="form-control" />
+        <span asp-validation-for="PricePerDay" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="FuelType" class="form-label"></label>
+        <input asp-for="FuelType" class="form-control" />
+        <span asp-validation-for="FuelType" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ModeleId" class="form-label">Modèle</label>
+        <select asp-for="ModeleId" asp-items="ViewBag.Modeles" class="form-control">
+            <option value="">-- Choisir un modèle --</option>
+        </select>
+        <span asp-validation-for="ModeleId" class="text-danger"></span>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+    {
+        <div class="mb-3">
+            <label class="form-label">Image actuelle</label>
+            <img src="@Model.ImageUrl" alt="Voiture" class="img-fluid rounded" style="max-height: 200px;" />
+        </div>
+    }
+
+    <div class="mb-3">
+        <label asp-for="ImageFile" class="form-label">Nouvelle image</label>
+        <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Enregistrer</button>
+    <a asp-action="Index" class="btn btn-secondary">Retour</a>
+
+</form>

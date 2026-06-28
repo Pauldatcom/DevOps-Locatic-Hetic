@@ -1,0 +1,60 @@
+@model ReservationConfirmationViewModel
+
+@{
+    ViewData["Title"] = "Réservation confirmée";
+    var placeholderImage = "https://placehold.co/600x400/e8eef5/64748b?text=Locatic";
+    var imageUrl = string.IsNullOrWhiteSpace(Model.ImageUrl) ? placeholderImage : Model.ImageUrl;
+}
+
+<section class="confirmation-page">
+    <div class="container">
+        <div class="confirmation-card">
+            <div class="confirmation-icon">✓</div>
+            <h1>Réservation confirmée !</h1>
+            <p class="confirmation-subtitle">
+                Merci <strong>@Model.ClientName</strong>, votre demande a bien été enregistrée.
+                Un e-mail de confirmation sera envoyé à <strong>@Model.Email</strong>.
+            </p>
+
+            <div class="confirmation-details">
+                <div class="confirmation-car">
+                    <img src="@imageUrl"
+                         alt="@Model.BrandName @Model.CarName"
+                         onerror="this.src='@placeholderImage'" />
+                    <div>
+                        <span class="car-card-brand">@Model.BrandName</span>
+                        <h3>@Model.CarName</h3>
+                    </div>
+                </div>
+
+                <div class="confirmation-info-grid">
+                    <div class="confirmation-info-item">
+                        <span class="label">Début</span>
+                        <strong>@Model.StartDate.ToString("dd/MM/yyyy")</strong>
+                    </div>
+                    <div class="confirmation-info-item">
+                        <span class="label">Fin</span>
+                        <strong>@Model.EndDate.ToString("dd/MM/yyyy")</strong>
+                    </div>
+                    <div class="confirmation-info-item">
+                        <span class="label">Durée</span>
+                        <strong>@Model.Days jour@(Model.Days > 1 ? "s" : "")</strong>
+                    </div>
+                    <div class="confirmation-info-item highlight">
+                        <span class="label">Total</span>
+                        <strong>@Model.TotalPrice.ToString("0") €</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="confirmation-actions">
+                <a asp-controller="Home" asp-action="Index" class="btn btn-reserve">
+                    Retour à l'accueil
+                </a>
+                <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary">
+                    Administration
+                </a>
+            </div>
+        </div>
+    </div>
+</section>

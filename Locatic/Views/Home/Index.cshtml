@@ -1,8 +1,144 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model LandingViewModel
+
+@{
+    ViewData["Title"] = "Location de voitures";
+    var placeholderImage = "https://placehold.co/600x400/e8eef5/64748b?text=Locatic";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+        <span class="hero-badge">Location simple & rapide</span>
+        <h1 class="hero-title">Trouvez la voiture idéale<br />pour votre prochain voyage</h1>
+        <p class="hero-subtitle">
+            Parcourez notre flotte, choisissez un modèle et réservez en quelques clics.
+        </p>
+        <a href="#vehicules" class="btn btn-hero">Voir nos véhicules</a>
+    </div>
+</section>
+
+<section class="filters-section" id="vehicules">
+    <div class="container">
+        <div class="section-header">
+            <h2>Nos véhicules disponibles</h2>
+            <p>Filtrez par modèle ou par nombre de places pour trouver la voiture idéale.</p>
+        </div>
+
+        <div class="filter-group">
+            <span class="filter-label">Modèle</span>
+            <div class="filter-pills">
+                <a asp-action="Index"
+                   asp-route-places="@Model.SelectedPlaces"
+                   class="filter-pill @(Model.SelectedModeleId == null ? "active" : "")">
+                    Tous
+                </a>
+                @foreach (var modele in Model.Modeles)
+                {
+                    <a asp-action="Index"
+                       asp-route-modeleId="@modele.Id"
+                       asp-route-places="@Model.SelectedPlaces"
+                       class="filter-pill @(Model.SelectedModeleId == modele.Id ? "active" : "")">
+                        @modele.Brand.Name @modele.Name
+                    </a>
+                }
+            </div>
+        </div>
+
+        @if (Model.AvailablePlaces.Any())
+        {
+            <div class="filter-group">
+                <span class="filter-label">Nombre de places</span>
+                <div class="filter-pills">
+                    <a asp-action="Index"
+                       asp-route-modeleId="@Model.SelectedModeleId"
+                       class="filter-pill @(Model.SelectedPlaces == null ? "active" : "")">
+                        Toutes
+                    </a>
+                    @foreach (var placeCount in Model.AvailablePlaces)
+                    {
+                        <a asp-action="Index"
+                           asp-route-modeleId="@Model.SelectedModeleId"
+                           asp-route-places="@placeCount"
+                           class="filter-pill @(Model.SelectedPlaces == placeCount ? "active" : "")">
+                            @placeCount places
+                        </a>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (!Model.Cars.Any())
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <img src="~/images/logo.svg" alt="" class="empty-logo" />
+                </div>
+                <h3>Aucun véhicule trouvé</h3>
+                <p>Essayez un autre modèle ou revenez plus tard.</p>
+                <a asp-action="Index" class="btn btn-outline-primary">Voir tous les véhicules</a>
+            </div>
+        }
+        else
+        {
+            <div class="car-grid">
+                @foreach (var car in Model.Cars)
+                {
+                    var imageUrl = string.IsNullOrWhiteSpace(car.ImageUrl) ? placeholderImage : car.ImageUrl;
+                    <article class="car-card">
+                        <div class="car-card-image">
+                            <img src="@imageUrl"
+                                 alt="@car.Modele.Brand.Name @car.Modele.Name"
+                                 loading="lazy"
+                                 onerror="this.src='@placeholderImage'" />
+                            <span class="car-price-badge">@car.PricePerDay.ToString("0") €<small>/jour</small></span>
+                        </div>
+                        <div class="car-card-body">
+                            <div class="car-card-brand">@car.Modele.Brand.Name</div>
+                            <h3 class="car-card-title">@car.Modele.Name</h3>
+                            <div class="car-card-specs">
+                                <span class="spec-tag">@car.Year</span>
+                                <span class="spec-tag">@car.FuelType</span>
+                                <span class="spec-tag">@car.NumberOfPlaces places</span>
+                            </div>
+                            <a asp-controller="Reservation"
+                               asp-action="Book"
+                               asp-route-carId="@car.Id"
+                               class="btn btn-reserve">
+                                Réserver cette voiture
+                            </a>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<section class="steps-section">
+    <div class="container">
+        <h2 class="text-center mb-5">Réserver en 3 étapes</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4>Choisissez un modèle</h4>
+                    <p>Parcourez notre catalogue et sélectionnez le véhicule qui correspond à vos besoins.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4>Indiquez vos dates</h4>
+                    <p>Choisissez la période de location et visualisez le prix total en temps réel.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4>Confirmez</h4>
+                    <p>Renseignez vos coordonnées et validez votre réservation en toute simplicité.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

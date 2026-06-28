@@ -1,0 +1,35 @@
+@model Locatic.Entities.Reservation
+
+<h1>Ajouter une réservation</h1>
+
+<form asp-action="Create" method="post">
+
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="ClientId" class="form-label">Client</label>
+        <select asp-for="ClientId" asp-items="ViewBag.Clients" class="form-control">
+            <option value="">-- Choisir un client --</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CarId" class="form-label">Voiture</label>
+        <select asp-for="CarId" asp-items="ViewBag.Cars" class="form-control">
+            <option value="">-- Choisir une voiture --</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="StartDate" class="form-label">Date de début</label>
+        <input asp-for="StartDate" type="date" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="EndDate" class="form-label">Date de fin</label>
+        <input asp-for="EndDate" type="date" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-success">Enregistrer</button>
+
+</form>

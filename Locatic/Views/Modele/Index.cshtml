@@ -1,0 +1,25 @@
+@model IEnumerable<Locatic.Entities.Modele>
+
+<h1>Liste des modèles</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Ajouter un modèle</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Marque</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var modele in Model)
+        {
+            <tr>
+                <td>@modele.Name</td>
+                <td>@modele.Brand.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>
