@@ -1,0 +1,98 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: locatic-app
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+    volumes:
+      - locatic-data:/data
+    ports:
+      - "8080:8080"
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-devops-training-local}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+  alertmanager:
+    image: prom/alertmanager:v0.30.0
+    container_name: alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:v1.10.2
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - monitoring
+
+  webhook-mock:
+    image: node:20-alpine
+    container_name: webhook-mock
+    command:
+      - node
+      - -e
+      - |
+        require('http')
+          .createServer((req, res) => {
+            let body = '';
+            req.on('data', (chunk) => { body += chunk; });
+            req.on('end', () => {
+              console.log(req.method, req.url, body);
+              res.writeHead(200);
+              res.end('ok');
+            });
+          })
+          .listen(5001, '0.0.0.0');
+    ports:
+      - "5001:5001"
+    networks:
+      - monitoring
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  locatic-data:
+
+networks:
+  monitoring:
+    driver: bridge

@@ -1,0 +1,39 @@
+name: CI Pipeline
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-dotnet@v4
+              with:
+                dotnet-version: '8.0.x'
+            - run: dotnet restore Locatic/Locatic.csproj
+            - run: dotnet build Locatic/Locatic.csproj --no-restore --configuration Release
+            - run: dotnet test Locatic/Locatic.csproj --no-build --configuration Release --verbosity normal
+
+    security:
+        needs: build
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+        - uses: aquasecurity/trivy-action@v0.36.0
+          with:
+            scan-type: fs
+            scan-ref: Locatic/
+            severity: HIGH,CRITICAL
+            exit-code: 1
+            format: table
+
+    # Le build/scan/publish de l'image Docker sera ajouté ici une fois le
+    # Dockerfile créé (étape "Préparer l'application pour le déploiement" du
+    # mini-projet), via ./.github/workflows/reusable-docker.yml.
+    # Le pipeline GitHub s'arrête volontairement après ces contrôles : le
+    # déploiement sur minikube est déclenché en local via Terraform/Ansible,
+    # jamais depuis les runners GitHub.
