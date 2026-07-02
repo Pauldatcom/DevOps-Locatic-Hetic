@@ -31,9 +31,15 @@ jobs:
             exit-code: 1
             format: table
 
-    # Le build/scan/publish de l'image Docker sera ajouté ici une fois le
-    # Dockerfile créé (étape "Préparer l'application pour le déploiement" du
-    # mini-projet), via ./.github/workflows/reusable-docker.yml.
+    docker-build:
+        needs: build
+        uses: ./.github/workflows/reusable-docker.yml
+        with:
+            image-name: locatic
+
+    # La publication de l'image (registry) sera ajoutée ici, gardée derriere
+    # une condition push sur main uniquement (étape "Gérer les secrets et la
+    # registry" du mini-projet).
     # Le pipeline GitHub s'arrête volontairement après ces contrôles : le
     # déploiement sur minikube est déclenché en local via Terraform/Ansible,
     # jamais depuis les runners GitHub.
