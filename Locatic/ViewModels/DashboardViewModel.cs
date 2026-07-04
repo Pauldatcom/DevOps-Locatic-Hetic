@@ -1,4 +1,5 @@
 namespace Locatic.ViewModels;
+
 using Microsoft.AspNetCore.Http;
 public class DashboardViewModel
 {
