@@ -1,0 +1,4 @@
+Will have in this folder
+ captures, 
+ extraits de logs 
+ exports montrant les étapes importantes.

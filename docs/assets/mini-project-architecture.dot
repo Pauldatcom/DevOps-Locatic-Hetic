@@ -1,0 +1,109 @@
+digraph G {
+  graph [
+    rankdir=TB,
+    bgcolor="#f8fafc",
+    pad="0.45",
+    nodesep="0.50",
+    ranksep="0.70",
+    splines=spline,
+    fontname="Arial",
+    fontsize=20,
+    dpi=150,
+    label="Architecture attendue du mini-projet DevOps WEB2",
+    labelloc=t
+  ];
+
+  node [
+    shape=rect,
+    style="rounded,filled",
+    fontname="Arial",
+    fontsize=14,
+    color="#334155",
+    penwidth=1.4,
+    fillcolor="#ffffff",
+    margin="0.16,0.10"
+  ];
+
+  edge [
+    color="#475569",
+    fontname="Arial",
+    fontsize=12,
+    arrowsize=0.8
+  ];
+
+  subgraph cluster_github {
+    label="GitHub";
+    color="#93c5fd";
+    style="rounded,dashed";
+    fontname="Arial";
+    fontsize=16;
+    bgcolor="#eff6ff";
+
+    student [label="Poste local", fillcolor="#e0f2fe"];
+    pr [label="Pull Request\nrevue + checks", fillcolor="#dbeafe"];
+    github [label="GitHub Actions\nrestore, build, test, scan", fillcolor="#dbeafe"];
+    registry [label="Registry image\nGHCR ou equivalent", fillcolor="#d1fae5"];
+  }
+
+  subgraph cluster_local {
+    label="Execution locale apres publication image";
+    color="#c4b5fd";
+    style="rounded,dashed";
+    fontname="Arial";
+    fontsize=16;
+    bgcolor="#f5f3ff";
+
+    terraform [label="Terraform apply local\nnamespace, stockage, outputs", fillcolor="#ede9fe"];
+    ansible [label="Ansible local\norchestration", fillcolor="#ede9fe"];
+    k8s_deploy [label="Deploiement Kubernetes\nressources applicatives", fillcolor="#ede9fe"];
+    helm [label="Bonus Helm\nchart configurable", style="rounded,dashed,filled", fillcolor="#faf5ff"];
+  }
+
+  subgraph cluster_minikube {
+    label="minikube sur le poste local";
+    color="#94a3b8";
+    style="rounded,dashed";
+    fontname="Arial";
+    fontsize=15;
+    bgcolor="#ffffff";
+
+    nginx [label="Nginx\nreverse proxy\npoint d'entree", fillcolor="#ffedd5"];
+    app [label="Application Locatic\nASP.NET Core MVC", fillcolor="#fef9c3"];
+    pvc [label="Volume persistant\nSQLite", fillcolor="#fef3c7"];
+    prometheus [label="Prometheus\ncollecte metriques", fillcolor="#fee2e2"];
+    grafana [label="Grafana\ndashboard services", fillcolor="#fce7f3"];
+  }
+
+  student -> pr [label="branche + PR"];
+  pr -> github [label="checks obligatoires"];
+  github -> registry [label="publication image\nsur main"];
+
+  student -> terraform [label="declenchement local"];
+  terraform -> ansible [label="outputs"];
+  ansible -> k8s_deploy [label="applique"];
+  registry -> k8s_deploy [label="image publiee"];
+  k8s_deploy -> nginx [label="installe"];
+  k8s_deploy -> app [label="installe"];
+  k8s_deploy -> pvc [label="cree ou utilise"];
+  k8s_deploy -> prometheus [label="installe"];
+  k8s_deploy -> grafana [label="installe"];
+
+  ansible -> helm [label="bonus", style=dashed, color="#7c3aed", fontcolor="#7c3aed"];
+  helm -> k8s_deploy [label="optionnel", style=dashed, color="#7c3aed", fontcolor="#7c3aed"];
+
+  nginx -> app [label="proxy HTTP"];
+  app -> pvc [label="lecture ecriture SQLite"];
+
+  prometheus -> nginx [label="scrape"];
+  prometheus -> app [label="scrape"];
+  prometheus -> pvc [label="etat stockage"];
+  grafana -> prometheus [label="requêtes"];
+
+  github -> terraform [
+    label="ne deploie pas sur minikube",
+    style=dashed,
+    color="#dc2626",
+    fontcolor="#dc2626",
+    arrowhead=none
+  ];
+}
