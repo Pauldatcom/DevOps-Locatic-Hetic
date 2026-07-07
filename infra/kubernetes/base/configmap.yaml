@@ -22,7 +22,7 @@ metadata:
 data:
   default.conf: |
     server {
-        listen 80;
+        listen 8080;
         server_name _;
 
         location / {
@@ -37,5 +37,13 @@ data:
         location /health {
             proxy_pass http://locatic-app:8080/health;
             proxy_http_version 1.1;
+        }
+
+        location /nginx_status {
+            stub_status;
+            access_log off;
+            allow 127.0.0.1;
+            allow 10.0.0.0/8;
+            deny all;
         }
     }

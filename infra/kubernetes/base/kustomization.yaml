@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - app.yaml
   - configmap.yaml
+  - nginx.yaml
   - pvc.yaml
 
 labels:
