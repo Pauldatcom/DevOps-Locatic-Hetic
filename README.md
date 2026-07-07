@@ -45,7 +45,8 @@ DevOps ajoute a l'application :
 ├── docker-compose.yml   # Stack de monitoring locale (Prometheus/Grafana/Alertmanager)
 ├── infra/
 │   ├── terraform/       # Infrastructure locale (namespace, stockage, environnements)
-│   └── ansible/         # Orchestration du deploiement local
+│   ├── ansible/         # Orchestration du deploiement local
+│   └── kubernetes/      # Manifests Kubernetes (app, Nginx, ConfigMap, PVC)
 ├── monitoring/          # Configuration Prometheus, Grafana, Alertmanager
 └── docs/                # Documentation detaillee (architecture, ci-cd, terraform, ansible, kubernetes, monitoring, exploitation...)
 ```
