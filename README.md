@@ -226,4 +226,4 @@ Le dossier `infra/` contient la configuration Terraform (namespace, stockage) et
 - Gires TIENTCHEU
 - Paul COMPAGNON
 
-Adaptation DevOps (CI/CD, Docker, Terraform, Ansible, Kubernetes, monitoring) : Paul (pauldatcom)
+ 
