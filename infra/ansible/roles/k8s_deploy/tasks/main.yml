@@ -1,0 +1,47 @@
+- name: Builder l'image Docker Locatic
+  ansible.builtin.command:
+    cmd: "docker build -t {{ locatic_image_name }} ."
+    chdir: "{{ locatic_docker_context }}"
+  changed_when: true
+
+- name: Charger l'image dans le cluster kind
+  ansible.builtin.command:
+    cmd: "kind load docker-image {{ locatic_image_name }} --name {{ kind_cluster_name }}"
+  changed_when: true
+
+- name: Appliquer les ConfigMaps
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ k8s_manifests_dir }}/configmap.yaml"
+
+- name: Déployer l'application Locatic
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ k8s_manifests_dir }}/app.yaml"
+
+- name: Déployer nginx (reverse proxy)
+  kubernetes.core.k8s:
+    state: present
+    src: "{{ k8s_manifests_dir }}/nginx.yaml"
+
+- name: Attendre que le déploiement de l'app soit disponible
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: locatic-app
+    namespace: "{{ k8s_namespace }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 180
+
+- name: Attendre que le déploiement nginx soit disponible
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: locatic-nginx
+    namespace: "{{ k8s_namespace }}"
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 120

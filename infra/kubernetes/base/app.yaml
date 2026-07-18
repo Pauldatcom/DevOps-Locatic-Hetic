@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: locatic-app
-  namespace: locatic
+  namespace: locatic-staging
   labels:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: app
@@ -68,13 +68,13 @@ spec:
       volumes:
         - name: sqlite-data
           persistentVolumeClaim:
-            claimName: locatic-sqlite-data
+            claimName: locatic-sqlite
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: locatic-app
-  namespace: locatic
+  namespace: locatic-staging
   labels:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: app

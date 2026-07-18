@@ -1,0 +1,5 @@
+locatic_image_name: "locatic:latest"
+locatic_docker_context: "/mnt/c/Users/HP ZBOOK/Desktop/Devops-Locatic-Hetic"
+kind_cluster_name: "kind"
+k8s_namespace: "locatic-staging"
+k8s_manifests_dir: "{{ playbook_dir }}/../kubernetes/base"

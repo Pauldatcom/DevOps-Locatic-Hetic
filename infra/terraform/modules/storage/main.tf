@@ -45,6 +45,8 @@ resource "kubernetes_persistent_volume_claim" "sqlite" {
     labels    = local.common_labels
   }
 
+  wait_until_bound = false
+
   spec {
     access_modes       = [var.sqlite_access_mode]
     storage_class_name = var.storage_class
