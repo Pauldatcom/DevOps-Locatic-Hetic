@@ -161,6 +161,9 @@ vite.config.ts.timestamp-*
 *.tfstate.*
 .terraform.lock.hcl
 *.tfvars.local
+
+# Ansible vars generees par deploy.sh (terraform output -json)
+infra/ansible/vars.json
 crash.log
 crash.*.log
 override.tf
