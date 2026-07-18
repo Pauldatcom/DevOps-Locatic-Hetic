@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace cible - cree par Terraform (voir infra/terraform/modules/namespace).
+# Ne pas appliquer ce dossier avant `terraform apply`.
+namespace: locatic-staging
+
+# Labels appliques a toutes les ressources generees par ce overlay.
+commonLabels:
+  app.kubernetes.io/environment: staging
+  managed-by: kustomize
+
+# Image deployee - peut etre surchargee via Ansible (templatisation) ou
+# via `kustomize edit set image`.
+images:
+  - name: ghcr.io/pauldatcom/locatic
+    newTag: latest
+
+# Replicas - surcharge via patch si besoin (voir replicas-patch.yaml)
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Deployment
+      name: locatic
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
