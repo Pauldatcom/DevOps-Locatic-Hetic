@@ -1,104 +1,111 @@
 # Kubernetes
 
-Ce dossier documente la partie Kubernetes du mini-projet Locatic. Les manifests
-versionnes se trouvent dans `infra/kubernetes/base` et sont prevus pour etre
-appliques sur le cluster minikube local **apres** Terraform (namespaces + PVC).
+L'application Locatic est deployee sur un cluster Kubernetes local minikube.
+Ce document decrit les ressources utilisees, le reverse proxy Nginx, le stockage
+SQLite et les metriques Prometheus.
+
+## Structure canonique
+
+Tous les manifests de deploiement vivent sous `deploy/k8s/` :
+
+```txt
+deploy/k8s/
+├── app/                       # Application Locatic (+ /metrics)
+│   ├── base/
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml       # ClusterIP (interne)
+│   │   ├── configmap.yaml
+│   │   ├── secret.yaml.tpl    # Template - jamais de vrai secret
+│   │   └── kustomization.yaml
+│   └── overlays/
+│       ├── dev/               # namespace locatic-staging
+│       └── prod/              # namespace locatic-prod
+└── nginx/                     # Reverse proxy (point d'entree)
+    ├── base/
+    │   ├── deployment.yaml
+    │   ├── service.yaml       # NodePort
+    │   ├── configmap.yaml
+    │   └── kustomization.yaml
+    └── overlays/
+        ├── dev/
+        └── prod/
+```
+
+> `infra/kubernetes/` est conserve uniquement comme pointeur historique. Ne plus
+> y ajouter de manifests : utiliser `deploy/k8s/`.
+
+## Architecture
+
+```txt
+Utilisateur
+  -> Service locatic-nginx (NodePort)
+  -> Pod Nginx
+  -> Service locatic (ClusterIP :8080)
+  -> Pod Locatic (/health, /metrics)
+  -> PVC locatic-sqlite (/data)
+```
+
+L'application n'est **pas** exposee directement. Nginx est le point d'entree.
 
 ## Separation des responsabilites
 
-| Ressource | Outil | Detail |
+| Ressource | Outil |
+| --- | --- |
+| Namespaces (`locatic-staging`, `locatic-prod`, `monitoring`) | Terraform |
+| PVC `locatic-sqlite` | Terraform |
+| Deployment / Service / ConfigMap app | `deploy/k8s/app` (+ Ansible) |
+| Deployment / Service / ConfigMap Nginx | `deploy/k8s/nginx` (+ Ansible) |
+| Stack Prometheus / Grafana | Monitoring + Ansible |
+
+## Alignement Terraform
+
+| Element | Dev | Prod |
 | --- | --- | --- |
-| Namespace app (`locatic-staging` / `locatic-prod`) | Terraform | Module `namespace` |
-| Namespace `monitoring` | Terraform | Module `namespace` |
-| PVC SQLite (`locatic-sqlite`) | Terraform | Module `storage` |
-| ConfigMaps, Deployments, Services | Kubernetes manifests / Ansible | `infra/kubernetes/base` |
-
-Les manifests Kubernetes ne recreent plus le PVC : ils le referencent seulement.
-
-## Ressources fournies
-
-- `configmap.yaml` : configuration ASP.NET Core et reverse proxy Nginx.
-- `app.yaml` : Deployment Locatic + Service interne `ClusterIP`.
-- `nginx.yaml` : Deployment Nginx + Service `NodePort` (point d'entree).
-- `kustomization.yaml` : regroupe les manifests et fixe le namespace
-  `locatic-staging` (aligné avec Terraform `environments/dev`).
-
-## Architecture Kubernetes
-
-```txt
-Utilisateur -> Service locatic-nginx -> Pod Nginx -> Service locatic-app -> Pod Locatic -> PVC locatic-sqlite (/data)
-```
-
-Le service `locatic-app` reste en `ClusterIP`. Le service `locatic-nginx` est le
-point d'entree principal expose via `NodePort` pour minikube.
-
-## Alignement avec Terraform
-
-| Element | Valeur Terraform (dev) | Manifests K8s |
-| --- | --- | --- |
-| Namespace | `locatic-staging` | `locatic-staging` |
-| PVC | `locatic-sqlite` | `claimName: locatic-sqlite` |
+| Namespace | `locatic-staging` | `locatic-prod` |
+| PVC | `locatic-sqlite` | `locatic-sqlite` |
 | Mount path | `/data` | `/data` |
-| Image | `ghcr.io/pauldatcom/locatic:latest` | meme image par defaut |
-| Replicas app | variable `app_replicas` | `1` (SQLite ReadWriteOnce) |
+| Image | `ghcr.io/pauldatcom/locatic:<tag>` | SHA epingle recommande |
+| Replicas app | `1` (SQLite ReadWriteOnce) | `1` |
 
-En production, le namespace devient `locatic-prod`. Ansible peut surcharger le
-namespace Kustomize et le tag d'image via les outputs Terraform (`ansible_vars`).
+Strategie Deployment app : `Recreate` (evite deux pods sur la meme PVC RWO).
 
-> Note : Terraform propose `app_replicas = 2` en dev. Pour SQLite en
-> `ReadWriteOnce`, les manifests gardent volontairement **1 replica** et une
-> strategie `Recreate`.
+## Metriques
 
-## Configuration applicative
+L'application expose `/metrics` via `prometheus-net` (port 8080).
+Des annotations `prometheus.io/*` sont presentes sur le pod applicatif pour
+preparer le scrape Prometheus (partie monitoring).
 
-ConfigMap `locatic-app-config` :
+## Secret
 
-- `ASPNETCORE_ENVIRONMENT=Production`
-- `ASPNETCORE_URLS=http://+:8080`
-- `ConnectionStrings__DefaultConnection=Data Source=/data/agence.db`
+`secret.yaml.tpl` est un **template**. Ne jamais y committer de vrai secret.
+Le Secret `locatic-secret` est optionnel au demarrage (`optional: true`) et
+doit etre valorise par Ansible si des variables sensibles apparaissent.
 
-Le volume `/data` est monte depuis la PVC Terraform `locatic-sqlite`.
+## Application
 
-## Image et tag
+Apres `terraform apply` :
 
 ```bash
-kubectl set image deployment/locatic-app locatic=ghcr.io/pauldatcom/locatic:<tag> -n locatic-staging
+# Application
+kubectl apply -k deploy/k8s/app/overlays/dev
+
+# Reverse proxy Nginx
+kubectl apply -k deploy/k8s/nginx/overlays/dev
 ```
 
-Avec Kustomize (apres `terraform apply`) :
+Verification :
 
 ```bash
-kubectl kustomize infra/kubernetes/base
-kubectl apply -k infra/kubernetes/base
+kubectl get all,pvc -n locatic-staging
+kubectl logs deploy/locatic -n locatic-staging
+kubectl logs deploy/locatic-nginx -n locatic-staging
+kubectl port-forward svc/locatic-nginx 8080:80 -n locatic-staging
+curl http://localhost:8080/health
+curl http://localhost:8080/metrics
 ```
 
 ## Probes et ressources
 
-Le pod applicatif expose `/health`. Nginx proxifie aussi `/health` : si l'app
-ne repond plus, l'entree Nginx devient non prete.
-
-Requests et limits CPU/memoire sont definies pour l'application et Nginx.
-
-## Verification locale
-
-```bash
-kubectl get all -n locatic-staging
-kubectl get pvc -n locatic-staging
-kubectl describe deployment locatic-app -n locatic-staging
-kubectl describe deployment locatic-nginx -n locatic-staging
-kubectl logs deploy/locatic-app -n locatic-staging
-kubectl logs deploy/locatic-nginx -n locatic-staging
-minikube service locatic-nginx -n locatic-staging
-```
-
-Acces via Nginx :
-
-```bash
-kubectl port-forward svc/locatic-nginx 8080:80 -n locatic-staging
-curl http://localhost:8080/health
-```
-
-## Monitoring
-
-Annotations Prometheus sur le pod/service applicatif pour preparer `/metrics`.
-La stack Prometheus/Grafana reste orchestree par Ansible.
+- App : startup / liveness / readiness sur `/health`
+- Nginx : liveness / readiness via `/health` proxifie vers l'app
+- Requests / limits CPU et memoire definies pour app et Nginx
