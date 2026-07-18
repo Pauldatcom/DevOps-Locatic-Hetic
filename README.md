@@ -37,17 +37,17 @@ DevOps ajoute a l'application :
 
 ```
 .
-├── .github/workflows/   # Pipeline CI (build, tests, scan de securite)
-├── Locatic/             # Code applicatif ASP.NET Core MVC
-│   ├── Controllers/ Entities/ Data/ Services/ ViewModels/ Views/ wwwroot/
-│   └── Tests/           # Tests automatises (xUnit)
-├── Dockerfile           # Image de l'application
+├── .github/workflows/   # Pipeline CI (lint, build, tests, scan Trivy, build/publish image)
+├── Locatic/             # Code applicatif ASP.NET Core MVC + Tests xUnit
+├── Dockerfile           # Image de l'application (multi-stage, non-root, /health)
 ├── docker-compose.yml   # Stack de monitoring locale (Prometheus/Grafana/Alertmanager)
+├── deploy/k8s/app/      # Manifests Kubernetes de l'application (Kustomize + overlays dev/prod)
+├── chart/locatic/       # Chart Helm bonus (alternative a Kustomize, rollback natif)
 ├── infra/
-│   ├── terraform/       # Infrastructure locale (namespace, stockage, environnements)
-│   └── ansible/         # Orchestration du deploiement local
+│   ├── terraform/       # Infrastructure locale minikube (namespaces, PVC SQLite)
+│   └── ansible/         # Orchestration du deploiement local (Gires)
 ├── monitoring/          # Configuration Prometheus, Grafana, Alertmanager
-└── docs/                # Documentation detaillee (architecture, ci-cd, terraform, ansible, kubernetes, monitoring, exploitation...)
+└── docs/                # Documentation detaillee (voir §16)
 ```
 
 ## 4. Modele de donnees (relations)
@@ -179,11 +179,14 @@ Un premier jeu de tests xUnit se trouve dans `Locatic/Tests/` (couche services a
 
 ## 12. Integration continue (CI)
 
-Le workflow `.github/workflows/ci.yml` s'execute sur chaque Pull Request et sur `main` :
-- build et tests .NET
-- scan de securite du code (Trivy)
+Le workflow `.github/workflows/ci.yml` s'execute sur chaque Pull Request (vers `develop`) et sur `main`/`develop` :
+- `lint` : `dotnet format --verify-no-changes`
+- `build` : `dotnet build` + `dotnet test` (xUnit)
+- `security` : scan Trivy du code source (HIGH/CRITICAL)
+- `docker-build` : build de l'image Docker + scan Trivy de l'image (workflow reutilisable)
+- `publish` : **uniquement sur push vers `main`** publie `ghcr.io/pauldatcom/locatic:<sha>` et `:latest`
 
-Le pipeline GitHub s'arrete volontairement apres ces controles : le build/scan/publication de l'image et le deploiement sur minikube sont geres localement (Terraform + Ansible), jamais depuis les runners GitHub. Detail dans `docs/ci-cd.md`.
+Le pipeline GitHub s'arrete volontairement apres la publication de l'image : le deploiement sur minikube est declenche localement (Terraform + Ansible), jamais depuis les runners GitHub. Detail dans `docs/ci-cd.md`.
 
 ## 13. Monitoring local
 
@@ -201,23 +204,32 @@ Detail dans `docs/monitoring.md`.
 
 ## 14. Infrastructure et deploiement local (Terraform / Ansible / minikube)
 
-Le dossier `infra/` contient la configuration Terraform (namespace, stockage) et le playbook Ansible qui orchestrent le deploiement sur minikube. Etapes exactes dans `docs/terraform.md`, `docs/ansible.md`, `docs/kubernetes.md` et `docs/deploiement-local.md`.
+Le dossier `infra/` contient la configuration Terraform (namespaces, PVC SQLite sur minikube) et le playbook Ansible (Gires) qui orchestrent le deploiement sur minikube. L'application est deployee derriere un reverse proxy Nginx et supervisee par Prometheus/Grafana. Etapes exactes dans `docs/terraform.md`, `docs/ansible.md`, `docs/kubernetes.md`, `docs/deploiement-local.md` et `docs/exploitation.md`.
+
+Bonus : un chart Helm `chart/locatic/` est disponible (alternative a Kustomize avec rollback natif, voir `docs/helm.md`).
 
 ## 15. Bonnes pratiques Git
 
-- La branche `main` est protegee : pas de push direct, Pull Request obligatoire avec au moins une approbation, pas de force-push ni de suppression de branche.
+- Workflow a deux branches longues : `develop` (integration, cible des PRs) et `main` (stable, resultante des merges de `develop`).
+- Les deux branches sont protegees : pas de push direct, Pull Request obligatoire avec checks CI au vert, pas de force-push.
+- Toute PR cible `develop`. Les merges `develop` -> `main` se font via une PR de synchronisation.
 - Verifier que le projet build et que les tests passent avant d'ouvrir une Pull Request.
-- Ne pas versionner les fichiers de base locale et temporaires SQLite, ni les secrets ou l'etat Terraform.
+- Ne pas versionner les fichiers de base locale et temporaires SQLite, ni les secrets, ni l'etat Terraform (voir `.gitignore`).
 
 ## 16. Documentation complementaire
 
 - `docs/mini-project.md` : consigne complete du mini-projet
-- `docs/architecture.md` : architecture globale
-- `docs/ci-cd.md` : regles de branche, Pull Requests, pipeline CI
-- `docs/terraform.md`, `docs/ansible.md`, `docs/kubernetes.md`, `docs/helm.md` : infrastructure et deploiement
-- `docs/monitoring.md` : Prometheus, Grafana, alertes
-- `docs/deploiement-local.md` : sequence complete de deploiement local
+- `docs/consigne.md` : consigne du projet POO original
+- `docs/architecture.md` : architecture globale, roles de chaque composant
+- `docs/ci-cd.md` : regles de branche, Pull Requests, checks, jobs du pipeline, publication de l'image, limites du pipeline GitHub
+- `docs/terraform.md` : ressources, variables, outputs, gestion de l'etat, procedure init/plan/apply sur minikube
+- `docs/ansible.md` : playbook, etapes orchestrees, dependance aux outputs Terraform (Gires)
+- `docs/kubernetes.md` : ressources K8s, services exposes, stockage SQLite, reverse proxy Nginx, configuration overlays
+- `docs/helm.md` : chart Helm bonus, valeurs configurables, procedure de release, rollback
+- `docs/monitoring.md` : Prometheus, Grafana, alertes (Gires)
+- `docs/deploiement-local.md` : sequence complete image publiee -> application deployee sur minikube
 - `docs/exploitation.md` : verification, logs, rollback, diagnostic
+- `docs/preuves/` : captures et extraits de logs des etapes importantes
 
 ## 17. Auteurs
 

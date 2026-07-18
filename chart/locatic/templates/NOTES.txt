@@ -1,0 +1,4 @@
+{{- if .Values.sqlite.pvc.create }}
+{{- /* PVC creee par le chart. Sinon, c'est Terraform qui la cree. */ -}}
+{{- end }}
+{{- /* Tests de connection optionnels via helm test */ -}}

@@ -1,0 +1,94 @@
+# Default values for the locatic Helm chart.
+# Override per environment via -f values-<env>.yaml or via Ansible.
+
+# Nombre de replicas du Deployment applicatif.
+replicaCount: 2
+
+image:
+  repository: ghcr.io/pauldatcom/locatic
+  pullPolicy: IfNotPresent
+  # Overrides the image tag (latest by default, pin a SHA in prod).
+  tag: latest
+
+# Identifiants utilisateur non-root (doivent matcher le Dockerfile).
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+
+# Ressources du conteneur applicatif.
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Probes de sante (l'application expose /health).
+probes:
+  liveness:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readiness:
+    path: /health
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  startup:
+    path: /health
+    failureThreshold: 30
+    periodSeconds: 5
+
+# Stockage SQLite sur volume persistant.
+# La PVC est creee par Terraform (voir docs/terraform.md). Le chart reference
+# cette PVC par son nom ; si pvc.create=true, le chart cree lui-meme la PVC.
+sqlite:
+  mountPath: /data
+  pvc:
+    create: false
+    name: locatic-sqlite
+    size: 1Gi
+    storageClass: standard
+    accessModes:
+      - ReadWriteOnce
+
+# Variables d'environnement non sensibles injectees via ConfigMap.
+config:
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:8080
+  LOG_LEVEL: info
+  SQLITE_PATH: /data/agence.db
+  ConnectionStrings__DefaultConnection: Data Source=/data/agence.db
+
+# Secrets - toujours surcharges via `--set` ou un values externe, jamais
+# commits en clair. L'app n'en utilise pas actuellement.
+secrets: {}
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Reverse proxy Nginx devant l'application. Desactive par defaut (Nginx est
+# gere par un chart/module separe de Gires). Activer pour deployer Nginx
+# depuis ce meme chart.
+nginx:
+  enabled: false
+  replicaCount: 1
+  image: nginx:1.27-alpine
+  service:
+    type: NodePort
+    port: 80
+    nodePort: 30080
+
+# Monitoring Prometheus/Grafana. Desactive par defaut (gere par Gires).
+monitoring:
+  enabled: false
+  prometheusScrape: true
+  prometheusPort: 8080
+  prometheusPath: /metrics

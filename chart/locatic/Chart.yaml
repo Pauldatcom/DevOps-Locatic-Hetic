@@ -1,0 +1,15 @@
+apiVersion: v2
+name: locatic
+description: Locatic - ASP.NET Core MVC car rental application with SQLite persistence, deployed behind Nginx on minikube.
+type: application
+version: 0.1.0
+appVersion: "8.0"
+keywords:
+  - aspnet
+  - locatic
+  - minikube
+home: https://github.com/Pauldatcom/DevOps-Locatic-Hetic
+sources:
+  - https://github.com/Pauldatcom/DevOps-Locatic-Hetic
+maintainers:
+  - name: Pauldatcom
