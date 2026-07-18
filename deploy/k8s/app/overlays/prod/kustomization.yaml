@@ -5,11 +5,13 @@ kind: Kustomization
 # Ne pas appliquer ce dossier avant `terraform apply`.
 namespace: locatic-prod
 
-commonLabels:
-  app.kubernetes.io/environment: prod
-  managed-by: kustomize
+labels:
+  - pairs:
+      app.kubernetes.io/environment: prod
+      managed-by: kustomize
+    includeSelectors: false
 
-# En prod, on epingle un SHA precis publie par la CI au lieu de latest.
+# En prod, epingler un SHA precis publie par la CI au lieu de latest.
 images:
   - name: ghcr.io/pauldatcom/locatic
     newTag: latest
@@ -24,4 +26,4 @@ patches:
     patch: |-
       - op: replace
         path: /spec/replicas
-        value: 3
+        value: 1

@@ -6,7 +6,10 @@ metadata:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: app
 spec:
-  replicas: 2
+  # SQLite + PVC ReadWriteOnce : une seule replica writer.
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app.kubernetes.io/name: locatic
@@ -21,11 +24,10 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+      # L'image Docker tourne deja en utilisateur non-root (USER locatic).
+      # Pas d'UID fixe : le Dockerfile n'epingle pas 10001.
       securityContext:
         runAsNonRoot: true
-        runAsUser: 10001
-        runAsGroup: 10001
-        fsGroup: 10001
       containers:
         - name: locatic
           image: ghcr.io/pauldatcom/locatic:latest
@@ -38,6 +40,7 @@ spec:
                 name: locatic-config
             - secretRef:
                 name: locatic-secret
+                optional: true
           env:
             - name: POD_NAME
               valueFrom:
@@ -58,6 +61,11 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           livenessProbe:
             httpGet:
               path: /health
@@ -82,5 +90,6 @@ spec:
             periodSeconds: 5
       volumes:
         - name: sqlite-data
+          # PVC creee par Terraform (module storage).
           persistentVolumeClaim:
             claimName: locatic-sqlite
