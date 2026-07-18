@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # /metrics n'existe pas encore côté app : à activer une fois un exporteur
+  # Prometheus (ex. prometheus-net.AspNetCore) ajouté dans Locatic (étape monitoring)
+  - job_name: "app"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["app:8080"]
+    scrape_interval: 5s
