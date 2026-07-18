@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base des manifests Kubernetes de l'application Locatic.
+#
+# Les overlays (overlays/dev, overlays/prod) personalisent le namespace,
+# le tag de l'image et le nombre de replicas.
+#
+# ATTENTION : avant d'appliquer ce base, Terraform doit avoir cree :
+#   - le namespace (locatic-staging ou locatic-prod)
+#   - la PersistentVolumeClaim locatic-sqlite
+# (voir infra/terraform/ et docs/terraform.md)
+#
+# Le Secret (secret.yaml.tpl) n'est pas inclus ici : il est valorise par
+# Ansible au deploiement. Inclure le fichier valorise via le overlay ou via
+# `kubectl apply -f` separement.
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
