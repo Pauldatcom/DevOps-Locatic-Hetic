@@ -2,11 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: locatic-app
-  namespace: locatic
+  namespace: locatic-staging
   labels:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: app
 spec:
+  # SQLite + PVC ReadWriteOnce : une seule replica writer.
   replicas: 1
   strategy:
     type: Recreate
@@ -26,7 +27,7 @@ spec:
     spec:
       containers:
         - name: locatic
-          image: locatic:latest
+          image: ghcr.io/pauldatcom/locatic:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -67,14 +68,15 @@ spec:
                 - ALL
       volumes:
         - name: sqlite-data
+          # PVC créée par Terraform (module storage) : locatic-sqlite
           persistentVolumeClaim:
-            claimName: locatic-sqlite-data
+            claimName: locatic-sqlite
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: locatic-app
-  namespace: locatic
+  namespace: locatic-staging
   labels:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: app
