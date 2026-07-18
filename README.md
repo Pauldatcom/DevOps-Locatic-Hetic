@@ -45,7 +45,8 @@ DevOps ajoute a l'application :
 ├── docker-compose.yml   # Stack de monitoring locale (Prometheus/Grafana/Alertmanager)
 ├── infra/
 │   ├── terraform/       # Infrastructure locale (namespace, stockage, environnements)
-│   └── ansible/         # Orchestration du deploiement local
+│   ├── ansible/         # Orchestration du deploiement local
+│   └── kubernetes/      # Manifests Kubernetes (app, Nginx, ConfigMap, PVC)
 ├── monitoring/          # Configuration Prometheus, Grafana, Alertmanager
 └── docs/                # Documentation detaillee (architecture, ci-cd, terraform, ansible, kubernetes, monitoring, exploitation...)
 ```
@@ -223,5 +224,6 @@ Le dossier `infra/` contient la configuration Terraform (namespace, stockage) et
 
 - Esso Mawaki ASSIAH
 - Gires TIENTCHEU
+- Paul COMPAGNON
 
-Adaptation DevOps (CI/CD, Docker, Terraform, Ansible, Kubernetes, monitoring) : Paul (pauldatcom)
+ 

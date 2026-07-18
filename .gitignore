@@ -156,8 +156,11 @@ vite.config.ts.timestamp-*
 
 # Terraform
 **/.terraform/*
+**/.terraform*/
 *.tfstate
 *.tfstate.*
+.terraform.lock.hcl
+*.tfvars.local
 crash.log
 crash.*.log
 override.tf
