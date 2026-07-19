@@ -156,8 +156,15 @@ vite.config.ts.timestamp-*
 
 # Terraform
 **/.terraform/*
+**/.terraform*/
 *.tfstate
 *.tfstate.*
+*.tfvars.local
+
+# Ansible outputs generated locally from Terraform
+infra/ansible/vars.json
+*.secret.yaml
+!**/*.yaml.tpl
 crash.log
 crash.*.log
 override.tf

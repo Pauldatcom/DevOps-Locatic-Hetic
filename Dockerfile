@@ -17,9 +17,10 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r locatic && useradd -r -g locatic locatic
+# UID/GID fixes (999) pour runAsNonRoot Kubernetes (noms seuls ne suffisent pas).
+RUN groupadd -r -g 999 locatic && useradd -r -u 999 -g locatic locatic
 
-# Chemin dédié au volume persistant SQLite (voir infra/kubernetes plus tard)
+# Chemin dédié au volume persistant SQLite
 RUN mkdir -p /data && chown -R locatic:locatic /data
 
 COPY --from=build /app/publish .
@@ -29,7 +30,7 @@ ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production \
     ConnectionStrings__DefaultConnection="Data Source=/data/agence.db"
 
-USER locatic
+USER 999:999
 EXPOSE 8080
 VOLUME ["/data"]
 

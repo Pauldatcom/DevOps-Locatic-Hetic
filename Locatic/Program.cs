@@ -2,10 +2,12 @@ using Locatic.Data;
 using Locatic.Services.Implementations;
 using Locatic.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+
 builder.Services.AddHealthChecks();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -34,8 +36,17 @@ using (var scope = app.Services.CreateScope())
     DbSeeder.Seed(context);
 }
 
-app.UseHttpsRedirection();
+// Pas de redirection HTTPS en conteneur (HTTP only sur :8080).
+if (!app.Environment.IsEnvironment("Production"))
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
+
+// Middleware /metrics (plus fiable que MapMetrics avec le catch-all MVC).
+app.UseMetricServer();
+app.UseHttpMetrics();
 
 app.UseRouting();
 
