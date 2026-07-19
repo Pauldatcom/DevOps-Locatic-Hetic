@@ -1,60 +1,44 @@
-Preuves / captures a joindre pour le rendu
+Preuves / captures pour le rendu Locatic DevOps
+================================================
 
-Objectif : montrer que la chaine complete fonctionne. Placer les captures dans
-ce dossier (PNG/JPG) ou coller des extraits de logs ci-dessous.
-
-Checklist minimale
-------------------
-[ ] PR representative (lien GitHub) + checks CI verts
-[ ] Protection de la branche main (screenshot Settings > Branches)
-[ ] Image publiee sur ghcr.io (Packages)
-[x] terraform apply (namespaces + PVC Bound) — verifie 2026-07-19
-[ ] ansible-playbook deploy-k8s.yml (ok=..., failed=0) — alternatif Windows : deploy.ps1
-[x] kubectl get all,pvc -n locatic-staging — pods Ready, PVC Bound
-[x] curl http://localhost:8888/health via Nginx — "Healthy"
-[x] curl http://localhost:8888/metrics (prometheus-net) — histogrammes HTTP
-[x] Prometheus /targets : locatic-app, nginx, node, prometheus, kubelet = UP
-[ ] Grafana dashboard "Locatic" avec panels app/nginx/node (screenshot UI)
-[x] Persistance SQLite : /data/agence.db encore present apres delete du pod app
-
-Extraits utiles (run local 2026-07-19 — Windows + minikube + deploy.ps1)
------------------------------------------------------------------------
-# Cluster
-kubectl get pods -n locatic-staging
-# locatic 1/1 Running ; locatic-nginx 2/2 Running
-# PVC locatic-sqlite Bound
-
-kubectl get pods -n monitoring
-# prometheus, grafana, alertmanager, node-exporter, webhook-mock = Running
-
-# Acces
-kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
-# HEALTH: Healthy
-# METRICS: OK (http_request_duration_seconds ...)
-
-# Prometheus targets API
-# locatic-app  up  10.244.0.x:8080
-# nginx        up  10.244.0.x:9113
-# node         up
-# prometheus   up
-# kubelet      up
-
-# Persistance
-kubectl delete pod -n locatic-staging -l app.kubernetes.io/component=app
-# apres recreate : /data/agence.db toujours present (meme taille)
-
-Commandes portables (groupe + prof)
------------------------------------
-Windows :
-  .\scripts\setup-prereqs.ps1
-  .\scripts\deploy.ps1
-  .\scripts\verify.ps1
-
-Linux/macOS :
-  ./scripts/deploy.sh dev minikube
-  ./scripts/verify.sh
-
-Liens projet
-------------
 Depot : https://github.com/Pauldatcom/DevOps-Locatic-Hetic
-Branche integration : feature/final-project-integration
+Branche de reference : main (apres merge PR #15)
+
+Liens utiles
+------------
+- PR #15 (develop -> main) : https://github.com/Pauldatcom/DevOps-Locatic-Hetic/pull/15
+- PR #14 (feature -> develop) : https://github.com/Pauldatcom/DevOps-Locatic-Hetic/pull/14
+- Actions CI : https://github.com/Pauldatcom/DevOps-Locatic-Hetic/actions
+- Package GHCR : https://github.com/Pauldatcom/DevOps-Locatic-Hetic/pkgs/container/locatic
+
+Fichiers dans ce dossier
+------------------------
+01-ci-checks-passed-main.png
+03-ci-jobs-lint-build-security-publish.png
+06-branch-protection-main.png
+07-ghcr-locatic-package.png
+08-grafana-dashboard.png
+09-prometheus-targets.png
+10-helm-history-rollback.txt
+notes.txt
+
+Checklist
+---------
+[x] PR representative + CI verte (lint, build, security, docker-build, publish)
+[x] Protection branche main (06-branch-protection-main.png)
+    PR obligatoire, 1 approval, status checks + branche a jour
+[x] Image GHCR publiee (latest + a2c554e)
+[x] Terraform / deploy local / Nginx /health /metrics — verifies
+[x] Prometheus targets UP (09-prometheus-targets.png : app, nginx, kubelet)
+[x] Grafana dashboard "Locatic - Vue d'ensemble"
+[x] Persistance SQLite apres delete pod
+
+Bonus Helm
+----------
+[x] Chart deploy/helm/locatic + Ansible/deploy.ps1 (helm upgrade --install)
+[x] helm lint OK ; release deployee ; rollback demontre (helm rollback)
+
+Commandes
+---------
+Windows : .\scripts\deploy.ps1 ; .\scripts\verify.ps1
+Linux   : ./scripts/deploy.sh dev minikube ; ./scripts/verify.sh

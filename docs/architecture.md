@@ -56,6 +56,12 @@ Prepare l'infrastructure locale minikube :
 - PVC `locatic-sqlite`
 - outputs (`ansible_vars`) pour Ansible / `scripts/deploy.sh`
 
+### Helm (bonus)
+
+- Chart `deploy/helm/locatic` : Deployment/Service/ConfigMap app + Nginx
+- Installe via Ansible (`helm upgrade --install`) ou `scripts/deploy.ps1`
+- Rollback : `helm rollback locatic <revision> -n locatic-staging`
+
 ### Ansible
 
 Orchestre le deploiement local :

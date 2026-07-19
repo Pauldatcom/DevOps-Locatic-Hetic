@@ -43,13 +43,12 @@ pip install kubernetes
 
 ## Ce que fait `k8s_deploy`
 
-1. Verifie Docker + kubectl + cluster
+1. Verifie Docker + kubectl (+ Helm si `use_helm=true`) + cluster
 2. Build l'image Docker Locatic
 3. Charge l'image dans minikube (`minikube image load`) ou kind
-4. Applique `deploy/k8s/app/overlays/<env>`
-5. Applique `deploy/k8s/nginx/overlays/<env>`
-6. Applique `deploy/k8s/monitoring/overlays/<env>` (si active)
-7. Attend que les Deployments `locatic` et `locatic-nginx` soient Available
+4. Deploye app + Nginx via **Helm** (`deploy/helm/locatic`) — ou Kustomize en fallback
+5. Applique `deploy/k8s/monitoring/overlays/<env>` (si active)
+6. Attend que les Deployments `locatic` et `locatic-nginx` soient Available
 
 ## Lancer
 

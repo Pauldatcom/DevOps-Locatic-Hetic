@@ -19,10 +19,16 @@ k8s_environment: "dev"
 k8s_namespace: "locatic-staging"
 monitoring_namespace: "monitoring"
 
-# Chemins des overlays Kustomize.
+# Chemins des overlays Kustomize (monitoring + fallback app/nginx).
 k8s_app_overlay: "{{ playbook_dir }}/../../deploy/k8s/app/overlays/{{ k8s_environment }}"
 k8s_nginx_overlay: "{{ playbook_dir }}/../../deploy/k8s/nginx/overlays/{{ k8s_environment }}"
 k8s_monitoring_overlay: "{{ playbook_dir }}/../../deploy/k8s/monitoring/overlays/{{ k8s_environment }}"
+
+# Bonus Helm : deploy app + nginx via chart (defaut). Monitoring reste Kustomize.
+use_helm: true
+helm_release_name: "locatic"
+helm_chart_path: "{{ playbook_dir }}/../../deploy/helm/locatic"
+helm_values_file: "{{ helm_chart_path }}/values-{{ k8s_environment }}.yaml"
 
 # Outputs Terraform (optionnel) : ecrits par scripts/deploy.sh / deploy.ps1.
 terraform_env_dir: "{{ playbook_dir }}/../terraform/environments/{{ 'dev' if k8s_environment == 'dev' else 'prod' }}"
