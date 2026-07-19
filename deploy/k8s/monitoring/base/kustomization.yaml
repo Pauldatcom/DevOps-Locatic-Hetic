@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base des manifests Kubernetes de la stack de monitoring Locatic.
+#
+# Deployee dans le namespace 'monitoring' (cree par Terraform, voir
+# docs/terraform.md). Les overlays (dev, prod) personalisent le namespace
+# cible et les ressources.
+#
+# Stack : Prometheus + Grafana + Alertmanager + Node Exporter + webhook-mock.
+#
+# Pre-requis : Terraform doit avoir cree le namespace 'monitoring' et la
+# StorageClass 'standard' de minikube doit etre disponible (provisioning
+# automatique des PVC Prometheus et Grafana).
+resources:
+  - prometheus-rbac.yaml
+  - prometheus-config.yaml
+  - prometheus.yaml
+  - alertmanager.yaml
+  - webhook-mock.yaml
+  - grafana-provisioning.yaml
+  - grafana-dashboard.yaml
+  - grafana-secret.yaml
+  - grafana.yaml
+  - node-exporter.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: locatic-monitoring
+  managed-by: kustomize

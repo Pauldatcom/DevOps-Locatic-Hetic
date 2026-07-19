@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/component: monitoring
+data:
+  app-overview.json: |
+    {
+      "annotations": { "list": [] },
+      "title": "Locatic - Vue d'ensemble",
+      "tags": ["locatic", "devops"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "version": 1,
+      "refresh": "15s",
+      "panels": [
+        {
+          "title": "Cibles Prometheus UP",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+          "targets": [
+            { "expr": "count(up == 1)", "legendFormat": "UP" }
+          ],
+          "fieldConfig": { "defaults": { "noValue": "0" } }
+        },
+        {
+          "title": "Cibles DOWN",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+          "targets": [
+            { "expr": "count(up == 0)", "legendFormat": "DOWN" }
+          ],
+          "fieldConfig": { "defaults": { "noValue": "0", "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "red", "value": 1 }
+          ] } } }
+        },
+        {
+          "title": "Pods Locatic prets",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+          "targets": [
+            { "expr": "count(up{job=\"locatic-app\"} == 1)", "legendFormat": "app" }
+          ],
+          "fieldConfig": { "defaults": { "noValue": "0" } }
+        },
+        {
+          "title": "Erreurs 5xx (rate)",
+          "type": "stat",
+          "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+          "targets": [
+            { "expr": "sum(rate(http_requests_total{job=\"locatic-app\",status=~\"5..\"}[5m]))", "legendFormat": "5xx" }
+          ],
+          "fieldConfig": { "defaults": { "noValue": "0", "unit": "reqps" } }
+        },
+        {
+          "title": "Taux de requetes HTTP (par methode/status)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+          "targets": [
+            { "expr": "rate(http_requests_total{job=\"locatic-app\"}[5m])", "legendFormat": "{{method}} {{status}}" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" } }
+        },
+        {
+          "title": "Latence P95 / P99",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+          "targets": [
+            { "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"locatic-app\"}[5m]))", "legendFormat": "P95" },
+            { "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"locatic-app\"}[5m]))", "legendFormat": "P99" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" } }
+        },
+        {
+          "title": "CPU du noeud minikube",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+          "targets": [
+            { "expr": "100 - (avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 } }
+        },
+        {
+          "title": "Memoire utilisee",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+          "targets": [
+            { "expr": "(node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 1024 / 1024", "legendFormat": "{{instance}} used (MiB)" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "MiB" } }
+        },
+        {
+          "title": "Espace disque disponible (PVC SQLite)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+          "targets": [
+            { "expr": "(node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}) * 100", "legendFormat": "{{instance}} / (% libre)" }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 } }
+        },
+        {
+          "title": "Etat des cibles Prometheus",
+          "type": "table",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+          "targets": [
+            { "expr": "up", "legendFormat": "{{job}} {{instance}}", "format": "table", "instant": true }
+          ]
+        }
+      ],
+      "time": { "from": "now-30m", "to": "now" }
+    }
