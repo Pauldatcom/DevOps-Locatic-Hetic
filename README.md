@@ -1,229 +1,240 @@
-# LOCATIC
+# Locatic — DevOps
 
-Application web de gestion d'une agence de location de voitures developpee avec ASP.NET Core MVC et Entity Framework Core.
+Application ASP.NET Core MVC de gestion d'une agence de location de voitures
+(SQLite), avec une chaîne DevOps complète : CI GitHub Actions, image Docker,
+Terraform, Ansible, Kubernetes (minikube) derrière Nginx, Prometheus / Grafana.
 
-Ce depot reprend le projet de POO [Projet_Locatic](https://github.com/Louange-03/Projet_Locatic) comme base et y ajoute une chaine DevOps complete : Pull Requests avec branche `main` protegee, pipeline CI GitHub Actions, conteneurisation Docker, infrastructure Terraform, orchestration Ansible, deploiement Kubernetes sur minikube derriere Nginx, et supervision Prometheus/Grafana. Le detail de la demarche est dans [`docs/mini-project.md`](docs/mini-project.md).
+Base POO : [Projet_Locatic](https://github.com/Louange-03/Projet_Locatic)  
+Consigne : [`docs/mini-project.md`](docs/mini-project.md)
 
-## 1. Presentation du projet
+---
 
-Locatic permet de gerer les elements metier principaux d'une agence de location :
-- Marques
-- Modeles
-- Voitures
-- Clients
-- Reservations
+## Démarrage rapide (chemin recommandé)
 
-Le projet suit une architecture claire (MVC + Services) avec persistance SQLite.
+Déploie **tout** sur minikube : Terraform → build image → app + Nginx + monitoring.
 
-## 2. Technologies utilisees
+### Windows (Docker Desktop)
 
-Application :
-- .NET 8
-- ASP.NET Core MVC
-- Entity Framework Core 8
-- SQLite
-- Razor Views
-- Bootstrap 5
+```powershell
+git clone https://github.com/Pauldatcom/DevOps-Locatic-Hetic.git
+cd DevOps-Locatic-Hetic
 
-DevOps ajoute a l'application :
-- Docker
-- GitHub Actions
-- Terraform
-- Ansible
-- Kubernetes (minikube)
-- Prometheus / Grafana
-
-## 3. Structure du depot
-
-```
-.
-├── .github/workflows/   # Pipeline CI (build, tests, scan de securite)
-├── Locatic/             # Code applicatif ASP.NET Core MVC
-│   ├── Controllers/ Entities/ Data/ Services/ ViewModels/ Views/ wwwroot/
-│   └── Tests/           # Tests automatises (xUnit)
-├── Dockerfile           # Image de l'application
-├── docker-compose.yml   # Stack de monitoring locale (Prometheus/Grafana/Alertmanager)
-├── infra/
-│   ├── terraform/       # Infrastructure locale (namespace, stockage, environnements)
-│   ├── ansible/         # Orchestration du deploiement local
-│   └── kubernetes/      # Manifests Kubernetes (app, Nginx, ConfigMap, PVC)
-├── monitoring/          # Configuration Prometheus, Grafana, Alertmanager
-└── docs/                # Documentation detaillee (architecture, ci-cd, terraform, ansible, kubernetes, monitoring, exploitation...)
+.\scripts\setup-prereqs.ps1   # une fois : minikube, Terraform, outils
+.\scripts\deploy.ps1          # déploiement complet
+.\scripts\verify.ps1          # health, /metrics, cibles Prometheus
 ```
 
-## 4. Modele de donnees (relations)
+### Linux / macOS
 
-- Brand 1 -> n Modele
-- Modele 1 -> n Car
-- Client 1 -> n Reservation
-- Car 1 -> n Reservation
+```bash
+git clone https://github.com/Pauldatcom/DevOps-Locatic-Hetic.git
+cd DevOps-Locatic-Hetic
 
-## 5. Prerequis
+./scripts/setup-prereqs.sh    # une fois si besoin
+./scripts/deploy.sh dev minikube
+./scripts/verify.sh
+```
 
-- SDK .NET 8 installe
-- Outil EF Core CLI installe (dotnet-ef)
-- Docker (pour la conteneurisation et le monitoring local)
-- minikube, Terraform, Ansible (pour le deploiement local complet, voir `docs/deploiement-local.md`)
+### Accès après déploiement
 
-Installation de dotnet-ef (si necessaire) :
+```powershell
+# Application (via Nginx — point d'entrée)
+kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
+# → http://127.0.0.1:8888
+# → http://127.0.0.1:8888/health
+# → http://127.0.0.1:8888/metrics
+
+# Prometheus
+kubectl port-forward -n monitoring svc/prometheus 9090:9090
+# → http://127.0.0.1:9090/targets
+
+# Grafana
+kubectl port-forward -n monitoring svc/grafana 3000:3000
+# → http://127.0.0.1:3000  (admin / devops-training-local)
+```
+
+Sur Windows, préférer `deploy.ps1` (évite les soucis WSL / kubeconfig).  
+Détail : [`docs/deploiement-local.md`](docs/deploiement-local.md).
+
+---
+
+## Prérequis
+
+| Outil | Usage |
+| --- | --- |
+| Docker Desktop (ou Engine) | Build image + driver minikube |
+| minikube | Cluster Kubernetes local |
+| kubectl | Appliquer / vérifier les ressources |
+| Terraform >= 1.6 | Namespaces + PVC SQLite |
+| Ansible (+ `kubernetes.core`) | Orchestration Linux (`deploy.sh`) |
+| .NET 8 SDK | Lancement app hors Docker (optionnel) |
+| `dotnet-ef` | Migrations SQLite hors Docker (optionnel) |
 
 ```bash
 dotnet tool install --global dotnet-ef --version 8.0.11
 ```
 
-## 6. Installation et lancement en local (sans Docker)
+---
 
-1. Cloner le depot :
+## Architecture (vue simple)
 
-```bash
-git clone git@github.com:Pauldatcom/DevOps-Locatic-Hetic.git
+```txt
+GitHub (PR + CI)
+  → build / tests / scan
+  → push image ghcr.io/pauldatcom/locatic (sur main uniquement)
+
+Machine locale
+  → Terraform : namespaces + PVC SQLite
+  → Ansible / deploy.ps1 : image + manifests
+  → minikube
+       Utilisateur → Nginx (NodePort) → App Locatic (:8080)
+                                       → SQLite sur PVC /data
+       Monitoring  → Prometheus + Grafana (+ Alertmanager, Node Exporter)
 ```
 
-2. Se placer dans le projet web :
+Le pipeline GitHub **ne déploie pas** sur minikube. Le déploiement se fait en local.
 
-```bash
-cd DevOps-Locatic-Hetic/Locatic
+---
+
+## Structure du dépôt
+
+```txt
+.
+├── .github/workflows/     # CI (build, tests, Trivy, publish GHCR)
+├── Locatic/               # Application ASP.NET Core MVC + tests xUnit
+├── Dockerfile             # Image runtime (USER 999, volume /data)
+├── docker-compose.yml     # Monitoring hors cluster (optionnel / dev rapide)
+├── deploy/k8s/            # Manifests Kustomize : app, nginx, monitoring
+├── infra/
+│   ├── terraform/         # Namespaces + PVC (env dev / prod)
+│   └── ansible/           # Playbook deploy-k8s.yml (role k8s_deploy)
+├── monitoring/            # Config Prometheus/Grafana pour docker-compose
+├── scripts/               # setup / deploy / verify (Windows + Linux)
+└── docs/                  # Documentation détaillée + preuves
 ```
 
-3. Restaurer les dependances :
+---
+
+## Autres façons de lancer l'application
+
+### A. .NET local (sans Docker / sans Kubernetes)
 
 ```bash
+cd Locatic
 dotnet restore
-```
-
-4. Appliquer les migrations sur la base SQLite :
-
-```bash
 dotnet ef database update
-```
-
-5. Compiler le projet :
-
-```bash
-dotnet build
-```
-
-6. Lancer l'application :
-
-```bash
 dotnet run
 ```
 
-Adresse locale (selon votre environnement) :
+URL typique : `http://localhost:5286`
 
-```txt
-http://localhost:5286
-```
-
-## 7. Lancer l'application avec Docker
+### B. Docker seul (sans Kubernetes)
 
 ```bash
 docker build -t locatic:latest .
 docker run -p 8080:8080 -v locatic-data:/data locatic:latest
 ```
 
-L'application est alors accessible sur `http://localhost:8080`. Les donnees SQLite sont persistees dans le volume `locatic-data` (monte sur `/data` dans le conteneur).
+→ `http://localhost:8080` — SQLite persisté dans le volume `locatic-data`.
 
-## 8. Commandes utiles
-
-Creer une migration :
-
-```bash
-dotnet ef migrations add NomMigration
-```
-
-Mettre a jour la base :
-
-```bash
-dotnet ef database update
-```
-
-Supprimer la derniere migration :
-
-```bash
-dotnet ef migrations remove
-```
-
-Compiler :
-
-```bash
-dotnet build
-```
-
-Lancer les tests :
-
-```bash
-dotnet test Locatic/Locatic.csproj
-```
-
-## 9. Configuration
-
-La chaine de connexion SQLite est configuree dans :
-- Locatic/appsettings.json
-- Locatic/appsettings.Development.json
-
-Valeur par defaut :
-
-```txt
-Data Source=agence.db
-```
-
-En conteneur, elle est surchargee par la variable d'environnement `ConnectionStrings__DefaultConnection` (voir `Dockerfile`), pointee vers le volume persistant `/data`.
-
-## 10. Initialisation des donnees
-
-Au demarrage, un seeding est execute pour inserer des donnees de base si elles n'existent pas encore (marques, modeles, voitures, clients).
-
-## 11. Tests automatises
-
-Un premier jeu de tests xUnit se trouve dans `Locatic/Tests/` (couche services avec EF Core InMemory). Il s'execute avec `dotnet test Locatic/Locatic.csproj` et fait partie du pipeline CI.
-
-## 12. Integration continue (CI)
-
-Le workflow `.github/workflows/ci.yml` s'execute sur chaque Pull Request et sur `main` :
-- build et tests .NET
-- scan de securite du code (Trivy)
-
-Le pipeline GitHub s'arrete volontairement apres ces controles : le build/scan/publication de l'image et le deploiement sur minikube sont geres localement (Terraform + Ansible), jamais depuis les runners GitHub. Detail dans `docs/ci-cd.md`.
-
-## 13. Monitoring local
-
-Une stack Prometheus/Grafana/Alertmanager est disponible via `docker-compose.yml` :
+### C. Monitoring hors cluster (docker-compose)
 
 ```bash
 docker compose up -d
 ```
 
-- Prometheus : http://localhost:9090
-- Grafana : http://localhost:3001 (identifiants par defaut dans `docker-compose.yml`)
-- Alertmanager : http://localhost:9093
+Pour le mini-projet, le monitoring **cible** est celui déployé dans Kubernetes
+(`deploy/k8s/monitoring`). Voir [`docs/monitoring.md`](docs/monitoring.md).
 
-Detail dans `docs/monitoring.md`.
+---
 
-## 14. Infrastructure et deploiement local (Terraform / Ansible / minikube)
+## Fonctionnalités métier
 
-Le dossier `infra/` contient la configuration Terraform (namespace, stockage) et le playbook Ansible qui orchestrent le deploiement sur minikube. Etapes exactes dans `docs/terraform.md`, `docs/ansible.md`, `docs/kubernetes.md` et `docs/deploiement-local.md`.
+- Marques, modèles, voitures (CRUD), clients, réservations
+- Persistance SQLite (EF Core) + seed au démarrage
+- Architecture MVC + services + injection de dépendances
 
-## 15. Bonnes pratiques Git
+Relations : Brand → Modele → Car ; Client / Car → Reservation.
 
-- La branche `main` est protegee : pas de push direct, Pull Request obligatoire avec au moins une approbation, pas de force-push ni de suppression de branche.
-- Verifier que le projet build et que les tests passent avant d'ouvrir une Pull Request.
-- Ne pas versionner les fichiers de base locale et temporaires SQLite, ni les secrets ou l'etat Terraform.
+---
 
-## 16. Documentation complementaire
+## CI / GitHub
 
-- `docs/mini-project.md` : consigne complete du mini-projet
-- `docs/architecture.md` : architecture globale
-- `docs/ci-cd.md` : regles de branche, Pull Requests, pipeline CI
-- `docs/terraform.md`, `docs/ansible.md`, `docs/kubernetes.md`, `docs/helm.md` : infrastructure et deploiement
-- `docs/monitoring.md` : Prometheus, Grafana, alertes
-- `docs/deploiement-local.md` : sequence complete de deploiement local
-- `docs/exploitation.md` : verification, logs, rollback, diagnostic
+Workflow : `.github/workflows/ci.yml`
 
-## 17. Auteurs
+| Sur Pull Request | Sur `main` |
+| --- | --- |
+| lint, build, tests | idem + |
+| scan Trivy | **publication** image `ghcr.io/pauldatcom/locatic` |
+
+Règles attendues :
+
+- pas de push direct sur `main`
+- merge via Pull Request + checks CI verts
+- secrets et `terraform.tfstate` **jamais** versionnés
+
+Détail : [`docs/ci-cd.md`](docs/ci-cd.md).
+
+---
+
+## Configuration utile
+
+| Contexte | SQLite |
+| --- | --- |
+| Dev local (.NET) | `Data Source=agence.db` (`appsettings`) |
+| Conteneur / K8s | `Data Source=/data/agence.db` (env + PVC) |
+
+Endpoints applicatifs :
+
+- `/health` — readiness / liveness Kubernetes
+- `/metrics` — scrape Prometheus (`prometheus-net`)
+
+---
+
+## Commandes utiles
+
+```bash
+# Tests
+dotnet test Locatic/Locatic.csproj
+
+# Migrations (hors Docker)
+dotnet ef migrations add NomMigration --project Locatic
+dotnet ef database update --project Locatic
+
+# Cluster
+kubectl get all,pvc -n locatic-staging
+kubectl get all -n monitoring
+kubectl logs -n locatic-staging deploy/locatic
+
+# Persistance SQLite (après delete du pod app)
+kubectl delete pod -n locatic-staging -l app.kubernetes.io/component=app
+kubectl exec -n locatic-staging deploy/locatic -- ls -la /data/agence.db
+```
+
+---
+
+## Documentation
+
+| Document | Contenu |
+| --- | --- |
+| [`docs/mini-project.md`](docs/mini-project.md) | Consigne complète |
+| [`docs/architecture.md`](docs/architecture.md) | Architecture globale |
+| [`docs/deploiement-local.md`](docs/deploiement-local.md) | Déploiement minikube pas à pas |
+| [`docs/ci-cd.md`](docs/ci-cd.md) | Pipeline et règles de branche |
+| [`docs/terraform.md`](docs/terraform.md) | Infra locale |
+| [`docs/ansible.md`](docs/ansible.md) | Orchestration |
+| [`docs/kubernetes.md`](docs/kubernetes.md) | Manifests app / Nginx |
+| [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / alertes |
+| [`docs/exploitation.md`](docs/exploitation.md) | Vérifs, logs, rollback |
+| [`docs/helm.md`](docs/helm.md) | Bonus Helm (non réalisé) |
+| [`docs/preuves/`](docs/preuves/) | Captures et preuves de rendu |
+
+---
+
+## Équipe
 
 - Esso Mawaki ASSIAH
 - Gires TIENTCHEU
 - Paul COMPAGNON
 
- 
+Dépôt : https://github.com/Pauldatcom/DevOps-Locatic-Hetic

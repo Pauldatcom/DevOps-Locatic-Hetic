@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-mock
+  labels:
+    app.kubernetes.io/name: webhook-mock
+    app.kubernetes.io/component: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: webhook-mock
+      app.kubernetes.io/component: monitoring
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: webhook-mock
+        app.kubernetes.io/component: monitoring
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+      containers:
+        - name: webhook-mock
+          image: node:20-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - node
+            - -e
+            - |
+              require('http')
+                .createServer((req, res) => {
+                  let body = '';
+                  req.on('data', (chunk) => { body += chunk; });
+                  req.on('end', () => {
+                    console.log(req.method, req.url, body);
+                    res.writeHead(200);
+                    res.end('ok');
+                  });
+                })
+                .listen(5001, '0.0.0.0');
+          ports:
+            - name: http
+              containerPort: 5001
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-mock
+  labels:
+    app.kubernetes.io/name: webhook-mock
+    app.kubernetes.io/component: monitoring
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: webhook-mock
+    app.kubernetes.io/component: monitoring
+  ports:
+    - name: http
+      port: 5001
+      targetPort: http
+      protocol: TCP

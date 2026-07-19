@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Overlay dev : namespace 'monitoring' commun, scrape l'app dans
+# locatic-staging (namespace par defaut de l'overlay app dev).
+namespace: monitoring
+
+resources:
+  - ../../base
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: staging
+    includeSelectors: false
+
+patches:
+  # Le scrape job 'locatic-app' cible le namespace applicatif de dev.
+  # Le ConfigMap de Prometheus etant genere statiquement, on garde la valeur
+  # 'locatic-staging' dans la base. Pour pointer vers un autre namespace, il
+  # faudrait templatiser via Ansible ou utiliser un Secret/ConfigMap dedie.
+  - target:
+      kind: Deployment
+      name: prometheus
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: 256Mi
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: 512Mi

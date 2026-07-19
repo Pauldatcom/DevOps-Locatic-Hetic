@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Namespace cible - cree par Terraform (voir infra/terraform/modules/namespace).
+# Ne pas appliquer ce dossier avant `terraform apply`.
+namespace: locatic-prod
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: prod
+      managed-by: kustomize
+    includeSelectors: false
+
+# En prod, epingler un SHA precis publie par la CI au lieu de latest.
+images:
+  - name: ghcr.io/pauldatcom/locatic
+    newTag: latest
+
+resources:
+  - ../../base
+
+patches:
+  - target:
+      kind: Deployment
+      name: locatic
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1

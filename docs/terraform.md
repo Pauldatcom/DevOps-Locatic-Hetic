@@ -95,7 +95,7 @@ Tous les namespaces portent les labels standards
 | `environment`        | Environnement (`staging` en dev, `prod` en prod) | — |
 | `app_image`          | Image Docker publiee par la CI (`ghcr.io/pauldatcom/locatic`) | — |
 | `app_tag`            | Tag de l'image (`latest` ou SHA epingle) | `latest` |
-| `app_replicas`       | Nombre de replicas du Deployment | `2` (dev) / `3` (prod) |
+| `app_replicas`       | Nombre de replicas du Deployment | `1` (SQLite ReadWriteOnce) |
 | `sqlite_size`        | Taille de la PVC SQLite | `1Gi` (dev) / `2Gi` (prod) |
 | `sqlite_host_path`   | hostPath pour PV explicite (vide = StorageClass standard) | `""` |
 | `monitoring_namespace` | Nom du namespace de monitoring | `monitoring` |
@@ -120,7 +120,7 @@ Terraform produit les outputs suivants, consommes par Ansible via
 | `sqlite_pvc_name`      | `locatic-sqlite`    | Reference `persistentVolumeClaim` dans le Deployment |
 | `sqlite_mount_path`    | `/data`             | `volumeMounts.mountPath` du conteneur Locatic |
 | `app_image`            | `ghcr.io/pauldatcom/locatic:latest` | `spec.template.spec.containers[].image` |
-| `app_replicas`         | `2`                 | `spec.replicas` |
+| `app_replicas`         | `1`                 | `spec.replicas` (force a 1 pour SQLite) |
 | `app_log_level`        | `debug`             | ConfigMap / env de l'application |
 | `kube_context`         | `minikube`          | Contexte `kubectl` a cibler |
 | `ansible_vars`         | objet JSON          | Sortie agregee destinee a `ansible/vars.json` |

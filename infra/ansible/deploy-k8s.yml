@@ -1,0 +1,6 @@
+- name: Deployer Locatic sur le cluster Kubernetes local
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - k8s_deploy

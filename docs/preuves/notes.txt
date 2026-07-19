@@ -1,4 +1,60 @@
-Will have in this folder
- captures, 
- extraits de logs 
- exports montrant les étapes importantes.
+Preuves / captures a joindre pour le rendu
+
+Objectif : montrer que la chaine complete fonctionne. Placer les captures dans
+ce dossier (PNG/JPG) ou coller des extraits de logs ci-dessous.
+
+Checklist minimale
+------------------
+[ ] PR representative (lien GitHub) + checks CI verts
+[ ] Protection de la branche main (screenshot Settings > Branches)
+[ ] Image publiee sur ghcr.io (Packages)
+[x] terraform apply (namespaces + PVC Bound) — verifie 2026-07-19
+[ ] ansible-playbook deploy-k8s.yml (ok=..., failed=0) — alternatif Windows : deploy.ps1
+[x] kubectl get all,pvc -n locatic-staging — pods Ready, PVC Bound
+[x] curl http://localhost:8888/health via Nginx — "Healthy"
+[x] curl http://localhost:8888/metrics (prometheus-net) — histogrammes HTTP
+[x] Prometheus /targets : locatic-app, nginx, node, prometheus, kubelet = UP
+[ ] Grafana dashboard "Locatic" avec panels app/nginx/node (screenshot UI)
+[x] Persistance SQLite : /data/agence.db encore present apres delete du pod app
+
+Extraits utiles (run local 2026-07-19 — Windows + minikube + deploy.ps1)
+-----------------------------------------------------------------------
+# Cluster
+kubectl get pods -n locatic-staging
+# locatic 1/1 Running ; locatic-nginx 2/2 Running
+# PVC locatic-sqlite Bound
+
+kubectl get pods -n monitoring
+# prometheus, grafana, alertmanager, node-exporter, webhook-mock = Running
+
+# Acces
+kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
+# HEALTH: Healthy
+# METRICS: OK (http_request_duration_seconds ...)
+
+# Prometheus targets API
+# locatic-app  up  10.244.0.x:8080
+# nginx        up  10.244.0.x:9113
+# node         up
+# prometheus   up
+# kubelet      up
+
+# Persistance
+kubectl delete pod -n locatic-staging -l app.kubernetes.io/component=app
+# apres recreate : /data/agence.db toujours present (meme taille)
+
+Commandes portables (groupe + prof)
+-----------------------------------
+Windows :
+  .\scripts\setup-prereqs.ps1
+  .\scripts\deploy.ps1
+  .\scripts\verify.ps1
+
+Linux/macOS :
+  ./scripts/deploy.sh dev minikube
+  ./scripts/verify.sh
+
+Liens projet
+------------
+Depot : https://github.com/Pauldatcom/DevOps-Locatic-Hetic
+Branche integration : feature/final-project-integration

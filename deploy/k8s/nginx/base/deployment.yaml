@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: locatic-nginx
-  namespace: locatic
   labels:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: nginx
@@ -17,6 +16,10 @@ spec:
       labels:
         app.kubernetes.io/name: locatic
         app.kubernetes.io/component: nginx
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
         - name: nginx
@@ -32,17 +35,17 @@ spec:
               readOnly: true
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 3
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: http
-            initialDelaySeconds: 20
+            initialDelaySeconds: 10
             periodSeconds: 20
             timeoutSeconds: 3
             failureThreshold: 3
@@ -59,25 +62,28 @@ spec:
             capabilities:
               drop:
                 - ALL
+        - name: nginx-exporter
+          image: nginx/nginx-prometheus-exporter:1.3.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - -nginx.scrape-uri=http://127.0.0.1:8080/nginx_status
+          ports:
+            - name: metrics
+              containerPort: 9113
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
       volumes:
         - name: nginx-config
           configMap:
             name: locatic-nginx-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: locatic-nginx
-  namespace: locatic
-  labels:
-    app.kubernetes.io/name: locatic
-    app.kubernetes.io/component: nginx
-spec:
-  type: NodePort
-  selector:
-    app.kubernetes.io/name: locatic
-    app.kubernetes.io/component: nginx
-  ports:
-    - name: http
-      port: 80
-      targetPort: http
