@@ -43,7 +43,7 @@ DevOps ajoute a l'application :
 │   └── Tests/           # Tests automatises (xUnit)
 ├── Dockerfile           # Image de l'application
 ├── docker-compose.yml   # Stack de monitoring locale (Prometheus/Grafana/Alertmanager)
-├── deploy/k8s/          # Manifests Kubernetes (app + Nginx, overlays dev/prod)
+├── deploy/k8s/          # Manifests Kubernetes (app + Nginx + monitoring)
 ├── infra/
 │   ├── terraform/       # Infrastructure locale (namespace, stockage, environnements)
 │   ├── ansible/         # Orchestration du deploiement local

@@ -1,148 +1,128 @@
-# Déploiement — Locatic
+# Deploiement local — Locatic
 
-Ce document décrit la chaîne complète de déploiement de l'application **Locatic** sur un cluster Kubernetes local (**kind**), en combinant **Terraform** (infrastructure de base) et **Ansible** (build & déploiement applicatif).
+Chaine complete pour passer d'une image publiee / code local a une application
+accessible sur un cluster Kubernetes local, avec monitoring.
 
 ## Vue d'ensemble
 
-```
-┌─────────────┐      ┌──────────────────┐      ┌─────────────────────┐
-│  Terraform  │ ───▶ │  Cluster kind     │ ◀─── │      Ansible        │
-│             │      │  (Kubernetes)     │      │                     │
-│ - namespace │      │                   │      │ - docker build      │
-│ - PVC       │      │  locatic-staging  │      │ - kind load image   │
-│   sqlite    │      │  namespace        │      │ - kubectl apply     │
-│ - namespace │      │                   │      │   (app + nginx)     │
-│   monitoring│      │                   │      │                     │
-└─────────────┘      └──────────────────┘      └─────────────────────┘
+```txt
+Terraform                  Ansible                         Cluster local
+---------                  -------                         -------------
+namespaces                 docker build                    locatic-staging
+PVC sqlite                 image load (minikube|kind)      app + nginx
+namespace monitoring       kubectl apply -k deploy/k8s/*   monitoring
 ```
 
-- **Terraform** crée les ressources qui doivent exister durablement et changer rarement : namespaces, PersistentVolumeClaim.
-- **Ansible** orchestre le cycle de build/déploiement applicatif : construction de l'image Docker, chargement dans le cluster, application des manifests Kubernetes.
+- **Terraform** : namespaces + PVC SQLite
+- **Ansible** : build image, load, apply app + Nginx + monitoring
+- **Point d'entree utilisateur** : Service `locatic-nginx` (NodePort / port-forward)
 
-## Prérequis généraux
+## Prerequis
 
-- **Docker Desktop** avec intégration WSL activée
-- **kind** (Kubernetes in Docker) avec un cluster actif
-- **kubectl** configuré et pointant vers le bon contexte
-- **Terraform** ≥ 1.x
-- **Ansible** avec la collection `kubernetes.core`
-- **.NET SDK 8.0** (pour dev/tests locaux hors conteneur)
+- Docker Desktop
+- **minikube** (consigne du mini-projet) — ou kind en alternative
+- kubectl, Terraform >= 1.6, Ansible + `kubernetes.core`
+- Python module `kubernetes`
 
-Vérifications rapides :
 ```bash
 docker --version
-kind get clusters
+minikube status          # ou : kind get clusters
 kubectl config current-context
 terraform --version
 ansible --version
 ```
 
-## Étape 1 — Infrastructure de base (Terraform)
+## Etape 1 — Demarrer le cluster
 
-Dossier : `infra/terraform/environments/dev`
-
-### Variables clés (`terraform.tfvars`)
-
-| Variable | Description | Exemple |
-|---|---|---|
-| `kubeconfig_path` | Chemin vers le fichier kubeconfig | `~/.kube/config` |
-| `kube_context` | Contexte kubectl à utiliser | `kind-kind` |
-| `monitoring_namespace` | Namespace dédié au monitoring | `monitoring` |
-
-⚠️ `kube_context` doit correspondre exactement à un contexte existant. Vérifier avec :
 ```bash
-kubectl config get-contexts
+minikube start
+kubectl config use-context minikube
 ```
 
-### Commandes
+Alternative kind :
+
+```bash
+kind create cluster --name kind
+kubectl config use-context kind-kind
+```
+
+## Etape 2 — Infrastructure Terraform
 
 ```bash
 cd infra/terraform/environments/dev
+# Verifier kube_context dans terraform.tfvars (minikube ou kind-kind)
 terraform init
 terraform plan
 terraform apply
 ```
 
-### Ressources créées
+Ressources creees :
 
-- Namespace applicatif : `locatic-staging`
-- Namespace monitoring : `monitoring`
-- PersistentVolumeClaim `locatic-sqlite` (namespace `locatic-staging`), storage class `standard` (mode `WaitForFirstConsumer` — reste `Pending` tant qu'aucun pod ne le monte, c'est normal)
-
-### Vérification
+- `locatic-staging`
+- `monitoring`
+- PVC `locatic-sqlite`
 
 ```bash
-kubectl get namespaces
+kubectl get ns
 kubectl get pvc -n locatic-staging
 ```
 
-## Étape 2 — Build & déploiement applicatif (Ansible)
-
-Dossier : `infra/ansible`
-
-Voir le [README dédié](./ansible/README.md) pour le détail des tâches, variables et rôles.
-
-### Commandes
+## Etape 3 — Deploiement Ansible
 
 ```bash
 cd infra/ansible
 ansible-galaxy collection install -r requirements.yml
 pip install kubernetes
+
+# minikube (defaut)
 ansible-playbook -i inventory.yml deploy-k8s.yml
+
+# kind
+ansible-playbook -i inventory.yml deploy-k8s.yml -e k8s_cluster_type=kind
 ```
 
-### Ce que ça déploie
+Ansible applique :
 
-- **locatic-app** : conteneur de l'application .NET (image buildée localement depuis le `Dockerfile` à la racine du repo), montant le PVC `locatic-sqlite` sur `/data`
-- **locatic-nginx** : reverse-proxy devant l'application, exposé en `NodePort`
+- `deploy/k8s/app/overlays/dev`
+- `deploy/k8s/nginx/overlays/dev`
+- `deploy/k8s/monitoring/overlays/dev`
 
-### Vérification
-
-```bash
-kubectl get all -n locatic-staging
-kubectl get pvc -n locatic-staging   # doit passer à Bound
-```
-
-## Étape 3 — Accès à l'application
-
-Le cluster kind local n'expose pas les NodePort directement sur `localhost`. Utiliser un port-forward :
+## Etape 4 — Verification
 
 ```bash
+kubectl get all,pvc -n locatic-staging
+kubectl get all -n monitoring
+
 kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
-```
-
-Puis :
-```bash
 curl http://localhost:8888/health
+curl http://localhost:8888/metrics
 ```
-ou dans un navigateur : `http://localhost:8888`
 
-## Étape 4 — Monitoring (à venir)
-
-Le namespace `monitoring` est déjà provisionné par Terraform. Les manifests de `locatic-app` et `locatic-nginx` sont déjà annotés pour Prometheus (`prometheus.io/scrape: "true"`, `prometheus.io/path: "/metrics"`, `prometheus.io/port: "8080"`), prêts pour le scraping une fois la stack Prometheus/Grafana déployée.
-
-## Ordre complet, de zéro à l'app accessible
+Monitoring :
 
 ```bash
-# 1. Infra de base
-cd infra/terraform/environments/dev
-terraform init && terraform apply
+kubectl port-forward -n monitoring svc/prometheus 9090:9090
+kubectl port-forward -n monitoring svc/grafana 3000:3000
+# Grafana : admin / devops-training-local (voir docs/monitoring.md)
+```
 
-# 2. Build + déploiement applicatif
+## Ordre complet
+
+```bash
+minikube start
+cd infra/terraform/environments/dev && terraform init && terraform apply
 cd ../../../ansible
 ansible-galaxy collection install -r requirements.yml
 ansible-playbook -i inventory.yml deploy-k8s.yml
-
-# 3. Accès
 kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
 ```
 
-## Dépannage général
+## Depannage
 
-| Symptôme | Solution |
-|---|---|
-| `context "X" does not exist` (Terraform) | Corriger `kube_context` dans `terraform.tfvars` avec `kubectl config get-contexts` |
-| `dial tcp ... connection refused` | Le cluster kind ou Docker Desktop est arrêté — vérifier `docker ps` et relancer Docker Desktop |
-| `docker: command not found` dans WSL | Réactiver l'intégration WSL dans Docker Desktop (Settings → Resources → WSL Integration) |
-| PVC bloqué en `Pending` indéfiniment sans pod qui le monte | Comportement normal avec `WaitForFirstConsumer` — se résout une fois l'app déployée |
-| Build Docker tué en cours de route | Manque de RAM WSL — configurer `.wslconfig` côté Windows et relancer `wsl --shutdown` |
+| Symptome | Solution |
+| --- | --- |
+| `context "X" does not exist` | Aligner `kube_context` dans `terraform.tfvars` |
+| `minikube` introuvable | Installer minikube ou utiliser `-e k8s_cluster_type=kind` |
+| PVC `Pending` sans pod | Normal avec `WaitForFirstConsumer` — Bound apres deploy app |
+| Target Prometheus `locatic-app` DOWN | Verifier `/metrics` et annotations sur le Deployment `locatic` |
+| Chemin Docker invalide | Les defaults Ansible utilisent `playbook_dir` (plus de chemin machine) |

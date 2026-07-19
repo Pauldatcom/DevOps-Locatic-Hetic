@@ -8,8 +8,10 @@ namespace: monitoring
 resources:
   - ../../base
 
-commonLabels:
-  app.kubernetes.io/environment: staging
+labels:
+  - pairs:
+      app.kubernetes.io/environment: staging
+    includeSelectors: false
 
 patches:
   # Le scrape job 'locatic-app' cible le namespace applicatif de dev.

@@ -10,8 +10,10 @@ namespace: monitoring
 resources:
   - ../../base
 
-commonLabels:
-  app.kubernetes.io/environment: prod
+labels:
+  - pairs:
+      app.kubernetes.io/environment: prod
+    includeSelectors: false
 
 patches:
   - target:

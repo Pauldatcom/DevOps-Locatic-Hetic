@@ -24,6 +24,8 @@ resources:
   - grafana.yaml
   - node-exporter.yaml
 
-commonLabels:
-  app.kubernetes.io/part-of: locatic-monitoring
-  managed-by: kustomize
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: locatic-monitoring
+      managed-by: kustomize
+    includeSelectors: false
