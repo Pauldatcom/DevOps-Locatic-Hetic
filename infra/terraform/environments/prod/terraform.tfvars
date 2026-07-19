@@ -4,7 +4,8 @@ environment = "prod"
 # Image publiee par la CI sur ghcr.io. En prod on epingle un SHA precis.
 app_image    = "ghcr.io/pauldatcom/locatic"
 app_tag      = "latest"
-app_replicas = 3
+# SQLite ReadWriteOnce : 1 replica (aligne avec deploy/k8s/app)
+app_replicas = 1
 
 # Stockage SQLite
 sqlite_size      = "2Gi"

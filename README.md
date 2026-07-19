@@ -182,28 +182,38 @@ Un premier jeu de tests xUnit se trouve dans `Locatic/Tests/` (couche services a
 ## 12. Integration continue (CI)
 
 Le workflow `.github/workflows/ci.yml` s'execute sur chaque Pull Request et sur `main` :
+- lint (`dotnet format`)
 - build et tests .NET
-- scan de securite du code (Trivy)
+- scan Trivy (code + image Docker)
+- **publication** de l'image sur `ghcr.io` **uniquement sur push `main`**
 
-Le pipeline GitHub s'arrete volontairement apres ces controles : le build/scan/publication de l'image et le deploiement sur minikube sont geres localement (Terraform + Ansible), jamais depuis les runners GitHub. Detail dans `docs/ci-cd.md`.
+Le pipeline GitHub **ne deploie pas** sur minikube. Apres publication, le
+deploiement local se fait via Terraform + Ansible. Detail : `docs/ci-cd.md`.
 
-## 13. Monitoring local
+## 13. Monitoring
 
-Une stack Prometheus/Grafana/Alertmanager est disponible via `docker-compose.yml` :
+Deux modes :
 
-```bash
-docker compose up -d
+1. **Kubernetes (cible du mini-projet)** : Prometheus/Grafana dans le namespace
+   `monitoring` via `deploy/k8s/monitoring` (orchestre par Ansible).
+2. **Docker Compose (dev rapide)** : `docker compose up -d`
+
+Detail : `docs/monitoring.md`.
+
+## 14. Infrastructure et deploiement local
+
+```powershell
+# Windows
+.\scripts\deploy.ps1 -EnvName dev -ClusterType minikube
 ```
 
-- Prometheus : http://localhost:9090
-- Grafana : http://localhost:3001 (identifiants par defaut dans `docker-compose.yml`)
-- Alertmanager : http://localhost:9093
+```bash
+# Git Bash / WSL
+./scripts/deploy.sh dev minikube
+```
 
-Detail dans `docs/monitoring.md`.
-
-## 14. Infrastructure et deploiement local (Terraform / Ansible / minikube)
-
-Le dossier `infra/` contient la configuration Terraform (namespace, stockage) et le playbook Ansible qui orchestrent le deploiement sur minikube. Etapes exactes dans `docs/terraform.md`, `docs/ansible.md`, `docs/kubernetes.md` et `docs/deploiement-local.md`.
+Detail : `docs/deploiement-local.md`, `docs/terraform.md`, `docs/ansible.md`,
+`docs/kubernetes.md`, `docs/exploitation.md`.
 
 ## 15. Bonnes pratiques Git
 

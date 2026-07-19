@@ -31,7 +31,7 @@ deploy/k8s/monitoring/
 │   ├── webhook-mock.yaml             # Deployment + Service (recoit les alertes)
 │   ├── grafana-provisioning.yaml     # ConfigMap : datasources + dashboards provider
 │   ├── grafana-dashboard.yaml        # ConfigMap : dashboard JSON "Locatic - Vue d'ensemble"
-│   ├── grafana-secret.yaml           # Secret : credentials admin Grafana
+│   ├── grafana-secret.yaml.tpl       # Template Secret (cree par Ansible)
 │   ├── grafana.yaml                  # PVC + Deployment + Service
 │   └── node-exporter.yaml            # DaemonSet + Service (metriques noeud)
 └── overlays/
@@ -47,7 +47,7 @@ Prometheus scrape les cibles suivantes (voir `prometheus-config.yaml`):
 | --- | --- | --- | --- |
 | `prometheus`  | `localhost:9090` | `/metrics` | Auto-supervision Prometheus |
 | `locatic-app` | pods Locatic (decouverte K8s) | `/metrics` | Metriques HTTP de l'app (prometheus-net) |
-| `nginx`       | `locatic-nginx.locatic-staging.svc.cluster.local:8080` | `/metrics` | Metriques Nginx (note : voir Limites) |
+| `nginx`       | pods Nginx + sidecar exporter (port 9113) | `/metrics` | Metriques Nginx (nginx-prometheus-exporter) |
 | `node`        | `node-exporter:9100` | `/metrics` | CPU, memoire, disque du noeud |
 | `kubelet`     | API Kubelet (https) | `/metrics` | Metriques internes Kubernetes |
 
@@ -153,15 +153,12 @@ Le dashboard permet de comprendre rapidement :
 
 ### Credentials Grafana
 
-Les identifiants admin Grafana sont dans le Secret `grafana-admin-secret`
-(`grafana-secret.yaml`). Valeurs par defaut (developpement local) :
+Le Secret `grafana-admin-secret` **n'est pas versionne**. Ansible le cree au
+deploiement (`infra/ansible/roles/k8s_deploy`). Defaults locaux dans
+`roles/k8s_deploy/defaults/main.yml` (surchargeables via `-e`).
 
-- user : `admin`
-- password : `devops-training-local`
-
-> En production, surcharger ces valeurs via Ansible (depuis un vault) ou via
-> `kubectl create secret generic grafana-admin-secret --from-literal=...`.
-> Ne jamais committer de vrai mot de passe.
+> Ne jamais committer de vrai mot de passe. Utiliser `grafana-secret.yaml.tpl`
+> uniquement comme modele.
 
 ## Acces aux interfaces
 
@@ -251,12 +248,9 @@ Prometheus sont UP.
 
 ## Limites connues
 
-- **Metriques Nginx** : le job `nginx` reste DOWN par defaut car
-  `nginxinc/nginx-unprivileged` n'expose pas `/metrics` nativement. Pour
-  l'activer, ajouter `nginx-prometheus-exporter` (sidecar) dans le
-  Deployment Nginx de Gires et pointer le scrape job vers ce sidecar. En
-  attendant, l'etat de Nginx reste visible via le target Prometheus (UP/DOWN)
-  et via les metriques `up{job="nginx"}`.
+- **Metriques Nginx** : un sidecar `nginx-prometheus-exporter` scrape
+  `stub_status` (`/nginx_status`) et expose `/metrics` sur le port `9113`.
+  Prometheus decouvre ce sidecar via `kubernetes_sd_configs`.
 - **Namespace applicatif en prod** : le ConfigMap `prometheus-config` contient
   en dur `locatic-staging` dans le job `locatic-app`. Pour pointer vers
   `locatic-prod`, soit templatiser le ConfigMap via Ansible, soit utiliser un

@@ -40,6 +40,9 @@ data:
           - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
             regex: locatic
             action: keep
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            regex: app
+            action: keep
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             regex: "true"
             action: keep
@@ -54,14 +57,27 @@ data:
             action: replace
         scrape_interval: 5s
 
-      # Nginx reverse proxy : stub_status equivalent via /metrics
-      # (nginx-unprivileged n'expose pas stub_status par defaut, on garde le
-      # job declare mais il restera DOWN tant qu'un exporteur Nginx n'est pas
-      # ajoute. Voir docs/monitoring.md §Limites.)
+      # Nginx reverse proxy via nginx-prometheus-exporter (sidecar, port 9113)
       - job_name: "nginx"
-        static_configs:
-          - targets: ["locatic-nginx.locatic-staging.svc.cluster.local:8080"]
         metrics_path: "/metrics"
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - locatic-staging
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            regex: nginx
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            regex: "true"
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_ip]
+            separator: ";"
+            regex: (.+);(.+)
+            target_label: __address__
+            replacement: $2:$1
+            action: replace
         scrape_interval: 10s
 
       # Node Exporter : metriques du noeud minikube (CPU, mem, disque)

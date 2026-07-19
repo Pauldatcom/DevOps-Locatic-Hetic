@@ -20,7 +20,7 @@ resources:
   - webhook-mock.yaml
   - grafana-provisioning.yaml
   - grafana-dashboard.yaml
-  - grafana-secret.yaml
+  # grafana-secret.yaml.tpl : Secret cree par Ansible (jamais de mot de passe en git)
   - grafana.yaml
   - node-exporter.yaml
 

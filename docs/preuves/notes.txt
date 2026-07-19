@@ -1,4 +1,37 @@
-Will have in this folder
- captures, 
- extraits de logs 
- exports montrant les étapes importantes.
+Preuves / captures a joindre pour le rendu
+
+Objectif : montrer que la chaine complete fonctionne. Placer les captures dans
+ce dossier (PNG/JPG) ou coller des extraits de logs ci-dessous.
+
+Checklist minimale
+------------------
+[ ] PR representative (lien GitHub) + checks CI verts
+[ ] Protection de la branche main (screenshot Settings > Branches)
+[ ] Image publiee sur ghcr.io (Packages)
+[ ] terraform apply (namespaces + PVC Bound ou Pending avant pod)
+[ ] ansible-playbook deploy-k8s.yml (ok=..., failed=0)
+[ ] kubectl get all,pvc -n locatic-staging
+[ ] curl http://localhost:8888/health via Nginx (port-forward)
+[ ] curl http://localhost:8888/metrics (prometheus-net)
+[ ] Prometheus /targets : locatic-app, nginx, node, prometheus = UP
+[ ] Grafana dashboard "Locatic" avec panels app/nginx/node
+[ ] Persistance SQLite : donnee encore presente apres delete du pod app
+
+Extraits utiles
+---------------
+# Apres terraform apply
+kubectl get ns
+kubectl get pvc -n locatic-staging
+
+# Apres ansible
+kubectl get deploy,svc,pods -n locatic-staging
+kubectl get deploy,svc,pods -n monitoring
+
+# Acces
+kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
+curl -i http://localhost:8888/health
+
+Liens projet
+------------
+Depot : https://github.com/Pauldatcom/DevOps-Locatic-Hetic
+Branche integration : feature/final-project-integration

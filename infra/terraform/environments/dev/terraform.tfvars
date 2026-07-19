@@ -4,7 +4,8 @@ environment = "staging"
 # Image publiee par la CI sur ghcr.io (voir .github/workflows/ci.yml).
 app_image    = "ghcr.io/pauldatcom/locatic"
 app_tag      = "latest"
-app_replicas = 2
+# SQLite ReadWriteOnce : 1 replica (aligne avec deploy/k8s/app)
+app_replicas = 1
 
 # Stockage SQLite
 sqlite_size      = "1Gi"

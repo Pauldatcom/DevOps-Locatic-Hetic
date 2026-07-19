@@ -1,25 +1,34 @@
-# Image Docker locale (build + load dans le cluster).
-locatic_image_name: "locatic:latest"
+# Image locale construite par Ansible, alignee sur le nom Kustomize/CI.
+locatic_image_repository: "ghcr.io/pauldatcom/locatic"
+locatic_image_tag: "latest"
+locatic_image_name: "{{ locatic_image_repository }}:{{ locatic_image_tag }}"
 
-# Contexte Docker = racine du depot (portable, pas de chemin machine).
+# Contexte Docker = racine du depot (portable).
 locatic_docker_context: "{{ playbook_dir }}/../.."
 
-# Cluster local : "minikube" (consigne) ou "kind" (alternative).
+# Cluster local : "minikube" (consigne) ou "kind".
 k8s_cluster_type: "minikube"
 kind_cluster_name: "kind"
 
 # Environnement applicatif (overlay Kustomize).
 k8s_environment: "dev"
 k8s_namespace: "locatic-staging"
+monitoring_namespace: "monitoring"
 
-# Chemins des overlays Kustomize unifies.
+# Chemins des overlays Kustomize.
 k8s_app_overlay: "{{ playbook_dir }}/../../deploy/k8s/app/overlays/{{ k8s_environment }}"
 k8s_nginx_overlay: "{{ playbook_dir }}/../../deploy/k8s/nginx/overlays/{{ k8s_environment }}"
 k8s_monitoring_overlay: "{{ playbook_dir }}/../../deploy/k8s/monitoring/overlays/{{ k8s_environment }}"
 
-# Deploiement monitoring (Prometheus/Grafana/...).
+# Outputs Terraform (optionnel) : ecrits par scripts/deploy.sh.
+terraform_env_dir: "{{ playbook_dir }}/../terraform/environments/{{ 'dev' if k8s_environment == 'dev' else 'prod' }}"
+ansible_vars_file: "{{ playbook_dir }}/vars.json"
+
 deploy_monitoring: true
 
-# Noms des Deployments attendus.
+# Credentials Grafana locaux (jamais commits dans les manifests).
+grafana_admin_user: "admin"
+grafana_admin_password: "devops-training-local"
+
 k8s_app_deployment: "locatic"
 k8s_nginx_deployment: "locatic-nginx"
