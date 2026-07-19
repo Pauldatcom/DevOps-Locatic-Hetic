@@ -1,5 +1,25 @@
+# Image Docker locale (build + load dans le cluster).
 locatic_image_name: "locatic:latest"
-locatic_docker_context: "/mnt/c/Users/HP ZBOOK/Desktop/Devops-Locatic-Hetic"
+
+# Contexte Docker = racine du depot (portable, pas de chemin machine).
+locatic_docker_context: "{{ playbook_dir }}/../.."
+
+# Cluster local : "minikube" (consigne) ou "kind" (alternative).
+k8s_cluster_type: "minikube"
 kind_cluster_name: "kind"
+
+# Environnement applicatif (overlay Kustomize).
+k8s_environment: "dev"
 k8s_namespace: "locatic-staging"
-k8s_manifests_dir: "{{ playbook_dir }}/../kubernetes/base"
+
+# Chemins des overlays Kustomize unifies.
+k8s_app_overlay: "{{ playbook_dir }}/../../deploy/k8s/app/overlays/{{ k8s_environment }}"
+k8s_nginx_overlay: "{{ playbook_dir }}/../../deploy/k8s/nginx/overlays/{{ k8s_environment }}"
+k8s_monitoring_overlay: "{{ playbook_dir }}/../../deploy/k8s/monitoring/overlays/{{ k8s_environment }}"
+
+# Deploiement monitoring (Prometheus/Grafana/...).
+deploy_monitoring: true
+
+# Noms des Deployments attendus.
+k8s_app_deployment: "locatic"
+k8s_nginx_deployment: "locatic-nginx"

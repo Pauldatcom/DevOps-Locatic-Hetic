@@ -1,33 +1,52 @@
+- name: Verifier les prerequis locaux
+  ansible.builtin.command: "{{ item }}"
+  loop:
+    - docker version
+    - kubectl version --client
+  changed_when: false
+
+- name: Verifier que le cluster local est disponible
+  ansible.builtin.command: kubectl cluster-info
+  changed_when: false
+
 - name: Builder l'image Docker Locatic
   ansible.builtin.command:
     cmd: "docker build -t {{ locatic_image_name }} ."
     chdir: "{{ locatic_docker_context }}"
   changed_when: true
 
-- name: Charger l'image dans le cluster kind
+- name: Charger l'image dans minikube
+  when: k8s_cluster_type == "minikube"
+  ansible.builtin.command:
+    cmd: "minikube image load {{ locatic_image_name }}"
+  changed_when: true
+
+- name: Charger l'image dans kind
+  when: k8s_cluster_type == "kind"
   ansible.builtin.command:
     cmd: "kind load docker-image {{ locatic_image_name }} --name {{ kind_cluster_name }}"
   changed_when: true
 
-- name: Appliquer les ConfigMaps
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ k8s_manifests_dir }}/configmap.yaml"
+- name: Appliquer les manifests de l'application (Kustomize)
+  ansible.builtin.command:
+    cmd: "kubectl apply -k {{ k8s_app_overlay }}"
+  changed_when: true
 
-- name: Déployer l'application Locatic
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ k8s_manifests_dir }}/app.yaml"
+- name: Appliquer les manifests Nginx (Kustomize)
+  ansible.builtin.command:
+    cmd: "kubectl apply -k {{ k8s_nginx_overlay }}"
+  changed_when: true
 
-- name: Déployer nginx (reverse proxy)
-  kubernetes.core.k8s:
-    state: present
-    src: "{{ k8s_manifests_dir }}/nginx.yaml"
+- name: Appliquer la stack de monitoring (Kustomize)
+  when: deploy_monitoring | bool
+  ansible.builtin.command:
+    cmd: "kubectl apply -k {{ k8s_monitoring_overlay }}"
+  changed_when: true
 
-- name: Attendre que le déploiement de l'app soit disponible
+- name: Attendre que le deploiement de l'app soit disponible
   kubernetes.core.k8s_info:
     kind: Deployment
-    name: locatic-app
+    name: "{{ k8s_app_deployment }}"
     namespace: "{{ k8s_namespace }}"
     wait: true
     wait_condition:
@@ -35,10 +54,10 @@
       status: "True"
     wait_timeout: 180
 
-- name: Attendre que le déploiement nginx soit disponible
+- name: Attendre que le deploiement nginx soit disponible
   kubernetes.core.k8s_info:
     kind: Deployment
-    name: locatic-nginx
+    name: "{{ k8s_nginx_deployment }}"
     namespace: "{{ k8s_namespace }}"
     wait: true
     wait_condition:

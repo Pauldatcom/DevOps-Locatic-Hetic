@@ -13,8 +13,9 @@ sqlite_host_path = "" # StorageClass 'standard' de minikube
 # Monitoring
 monitoring_namespace = "monitoring"
 
-# Contexte minikube local
-kube_context    = "kind-kind"
+# Contexte Kubernetes local (consigne = minikube).
+# Si vous utilisez kind : kube_context = "kind-kind"
+kube_context    = "minikube"
 kubeconfig_path = "~/.kube/config"
 
 app_log_level = "info"

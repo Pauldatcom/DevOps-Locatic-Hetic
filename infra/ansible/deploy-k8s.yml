@@ -1,4 +1,4 @@
-- name: Déployer Locatic sur le cluster Kubernetes local (kind)
+- name: Deployer Locatic sur le cluster Kubernetes local
   hosts: localhost
   connection: local
   gather_facts: false
