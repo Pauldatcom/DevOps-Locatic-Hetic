@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Reverse proxy Nginx devant l'application Locatic.
+# Le Service app (ClusterIP `locatic`) ne doit pas etre le point d'entree.
+resources:
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: locatic-config
+  labels:
+    app.kubernetes.io/name: locatic
+    app.kubernetes.io/component: app
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:8080
+  LOG_LEVEL: info
+  SQLITE_PATH: /data/agence.db
+  ConnectionStrings__DefaultConnection: Data Source=/data/agence.db

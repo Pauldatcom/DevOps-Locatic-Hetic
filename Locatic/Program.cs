@@ -2,10 +2,12 @@ using Locatic.Data;
 using Locatic.Services.Implementations;
 using Locatic.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
+
 builder.Services.AddHealthChecks();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -42,6 +44,10 @@ app.UseRouting();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health");
+
+app.UseHttpMetrics();
+
+app.MapMetrics("/metrics");
 
 app.MapControllerRoute(
     name: "default",

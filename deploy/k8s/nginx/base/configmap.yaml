@@ -1,21 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: locatic-app-config
-  namespace: locatic-staging
-  labels:
-    app.kubernetes.io/name: locatic
-    app.kubernetes.io/component: app
-data:
-  ASPNETCORE_ENVIRONMENT: "Production"
-  ASPNETCORE_URLS: "http://+:8080"
-  ConnectionStrings__DefaultConnection: "Data Source=/data/agence.db"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
   name: locatic-nginx-config
-  namespace: locatic-staging
   labels:
     app.kubernetes.io/name: locatic
     app.kubernetes.io/component: nginx
@@ -26,7 +12,7 @@ data:
         server_name _;
 
         location / {
-            proxy_pass http://locatic-app:8080;
+            proxy_pass http://locatic:8080;
             proxy_http_version 1.1;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
@@ -35,7 +21,7 @@ data:
         }
 
         location /health {
-            proxy_pass http://locatic-app:8080/health;
+            proxy_pass http://locatic:8080/health;
             proxy_http_version 1.1;
         }
 
