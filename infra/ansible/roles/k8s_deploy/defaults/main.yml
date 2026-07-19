@@ -1,6 +1,7 @@
 # Image locale construite par Ansible, alignee sur le nom Kustomize/CI.
 locatic_image_repository: "ghcr.io/pauldatcom/locatic"
-locatic_image_tag: "latest"
+# Tag unique par run local : evite le cache minikube sur :latest.
+locatic_image_tag: "local-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
 locatic_image_name: "{{ locatic_image_repository }}:{{ locatic_image_tag }}"
 
 # Contexte Docker = racine du depot (portable).
@@ -9,6 +10,9 @@ locatic_docker_context: "{{ playbook_dir }}/../.."
 # Cluster local : "minikube" (consigne) ou "kind".
 k8s_cluster_type: "minikube"
 kind_cluster_name: "kind"
+
+# Binaire minikube (auto: PATH, sinon exe Windows depuis WSL).
+minikube_bin: "minikube"
 
 # Environnement applicatif (overlay Kustomize).
 k8s_environment: "dev"
@@ -20,9 +24,12 @@ k8s_app_overlay: "{{ playbook_dir }}/../../deploy/k8s/app/overlays/{{ k8s_enviro
 k8s_nginx_overlay: "{{ playbook_dir }}/../../deploy/k8s/nginx/overlays/{{ k8s_environment }}"
 k8s_monitoring_overlay: "{{ playbook_dir }}/../../deploy/k8s/monitoring/overlays/{{ k8s_environment }}"
 
-# Outputs Terraform (optionnel) : ecrits par scripts/deploy.sh.
+# Outputs Terraform (optionnel) : ecrits par scripts/deploy.sh / deploy.ps1.
 terraform_env_dir: "{{ playbook_dir }}/../terraform/environments/{{ 'dev' if k8s_environment == 'dev' else 'prod' }}"
 ansible_vars_file: "{{ playbook_dir }}/vars.json"
+
+# Si true : skip build/load (image deja chargee par le script hote).
+skip_image_build: false
 
 deploy_monitoring: true
 

@@ -1,4 +1,5 @@
-# Deploy Locatic locally on Windows: Terraform then Ansible.
+# Deploy Locatic on Windows with Docker Desktop + minikube.
+# Portable for any Windows machine (students / professor).
 # Usage: .\scripts\deploy.ps1 [-EnvName dev] [-ClusterType minikube]
 param(
     [ValidateSet("dev", "prod")]
@@ -8,9 +9,31 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [System.Environment]::GetEnvironmentVariable("Path", "User")
+
 $Root = Split-Path -Parent $PSScriptRoot
 $TfDir = Join-Path $Root "infra\terraform\environments\$EnvName"
 $AnsibleDir = Join-Path $Root "infra\ansible"
+# Tag unique a chaque run : evite le cache minikube qui garde une vieille :latest.
+$ImageTag = "local-$(Get-Date -Format 'yyyyMMddHHmmss')"
+$Image = "ghcr.io/pauldatcom/locatic:$ImageTag"
+$NsApp = if ($EnvName -eq "prod") { "locatic-prod" } else { "locatic-staging" }
+$AppOverlay = Join-Path $Root "deploy\k8s\app\overlays\$EnvName"
+$NginxOverlay = Join-Path $Root "deploy\k8s\nginx\overlays\$EnvName"
+$MonOverlay = Join-Path $Root "deploy\k8s\monitoring\overlays\$EnvName"
+
+Write-Host "==> Ensure cluster context ($ClusterType)"
+if ($ClusterType -eq "minikube") {
+    minikube status 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Starting minikube..."
+        minikube start --driver=docker --cpus=2 --memory=4096
+    }
+    kubectl config use-context minikube | Out-Null
+}
+
+& (Join-Path $PSScriptRoot "sync-kube-context.ps1") -EnvName $EnvName
 
 Write-Host "==> Terraform init/apply ($EnvName)"
 Push-Location $TfDir
@@ -24,19 +47,44 @@ finally {
     Pop-Location
 }
 
-Write-Host "==> Ansible deploy (cluster=$ClusterType)"
-Push-Location $AnsibleDir
+Write-Host "==> Build + load image ($Image)"
+Push-Location $Root
 try {
-    ansible-galaxy collection install -r requirements.yml | Out-Null
-    ansible-playbook -i inventory.yml deploy-k8s.yml `
-        -e "k8s_cluster_type=$ClusterType" `
-        -e "k8s_environment=$EnvName"
+    docker build -t $Image -t "ghcr.io/pauldatcom/locatic:latest" .
+    if ($ClusterType -eq "minikube") {
+        minikube image load $Image
+    } else {
+        kind load docker-image $Image --name kind
+    }
 }
 finally {
     Pop-Location
 }
 
+Write-Host "==> Apply manifests (kubectl + Kustomize)"
+kubectl apply -k $AppOverlay
+kubectl apply -k $NginxOverlay
+# Manifests referencent :latest ; on force le tag local charge dans le cluster.
+kubectl -n $NsApp set image deployment/locatic "locatic=$Image"
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n monitoring create secret generic grafana-admin-secret `
+    --from-literal=GF_SECURITY_ADMIN_USER=admin `
+    --from-literal=GF_SECURITY_ADMIN_PASSWORD=devops-training-local `
+    --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -k $MonOverlay
+
+Write-Host "==> Wait for rollouts"
+kubectl -n $NsApp rollout status deployment/locatic --timeout=180s
+kubectl -n $NsApp rollout status deployment/locatic-nginx --timeout=120s
+kubectl -n monitoring rollout status deployment/prometheus --timeout=180s
+kubectl -n monitoring rollout status deployment/grafana --timeout=120s
+
 Write-Host "==> Done"
-Write-Host "App:        kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80"
-Write-Host "Prometheus: kubectl port-forward -n monitoring svc/prometheus 9090:9090"
-Write-Host "Grafana:    kubectl port-forward -n monitoring svc/grafana 3000:3000"
+Write-Host "Image: $Image"
+Write-Host "Verify:"
+Write-Host "  .\scripts\verify.ps1"
+Write-Host "  kubectl port-forward -n $NsApp svc/locatic-nginx 8888:80"
+Write-Host "  curl http://127.0.0.1:8888/health"
+Write-Host "  curl http://127.0.0.1:8888/metrics"
+Write-Host ""
+Write-Host "Linux/macOS: ./scripts/deploy.sh (Ansible)."

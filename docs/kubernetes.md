@@ -31,9 +31,6 @@ deploy/k8s/
         └── prod/
 ```
 
-> `infra/kubernetes/` est conserve uniquement comme pointeur historique. Ne plus
-> y ajouter de manifests : utiliser `deploy/k8s/`.
-
 ## Architecture
 
 ```txt

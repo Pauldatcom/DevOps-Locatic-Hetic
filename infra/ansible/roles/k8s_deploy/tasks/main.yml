@@ -9,82 +9,102 @@
   ansible.builtin.command: kubectl cluster-info
   changed_when: false
 
+- name: Detecter minikube Windows depuis WSL si besoin
+  when: k8s_cluster_type == "minikube"
+  ansible.builtin.shell: |
+    if command -v minikube >/dev/null 2>&1; then
+      echo minikube
+    elif [ -x "/mnt/c/Program Files/Kubernetes/Minikube/minikube.exe" ]; then
+      echo "/mnt/c/Program Files/Kubernetes/Minikube/minikube.exe"
+    else
+      echo minikube
+    fi
+  register: detected_minikube
+  changed_when: false
+
+- name: Fixer le binaire minikube
+  when: k8s_cluster_type == "minikube"
+  ansible.builtin.set_fact:
+    minikube_bin: "{{ detected_minikube.stdout | trim }}"
+
 - name: Charger les outputs Terraform si disponibles
-  when: ansible_vars_file is file
+  when: ansible_vars_file is exists
   ansible.builtin.include_vars:
     file: "{{ ansible_vars_file }}"
     name: terraform_vars
 
 - name: Builder l'image Docker Locatic
+  when: not (skip_image_build | bool)
   ansible.builtin.command:
     cmd: "docker build -t {{ locatic_image_name }} ."
     chdir: "{{ locatic_docker_context }}"
   changed_when: true
 
 - name: Charger l'image dans minikube
-  when: k8s_cluster_type == "minikube"
+  when:
+    - k8s_cluster_type == "minikube"
+    - not (skip_image_build | bool)
   ansible.builtin.command:
-    cmd: "minikube image load {{ locatic_image_name }}"
+    cmd: "{{ minikube_bin }} image load {{ locatic_image_name }}"
   changed_when: true
 
 - name: Charger l'image dans kind
-  when: k8s_cluster_type == "kind"
+  when:
+    - k8s_cluster_type == "kind"
+    - not (skip_image_build | bool)
   ansible.builtin.command:
     cmd: "kind load docker-image {{ locatic_image_name }} --name {{ kind_cluster_name }}"
   changed_when: true
 
 - name: Appliquer les manifests de l'application (Kustomize)
-  ansible.builtin.command:
-    cmd: "kubectl apply -k {{ k8s_app_overlay }}"
+  ansible.builtin.command: kubectl apply -k "{{ k8s_app_overlay }}"
+  register: apply_app
+  changed_when: "'configured' in apply_app.stdout or 'created' in apply_app.stdout"
+
+- name: Pointer le Deployment app sur l'image locale chargee
+  when: not (skip_image_build | bool)
+  ansible.builtin.command: >-
+    kubectl -n {{ k8s_namespace }} set image
+    deployment/{{ k8s_app_deployment }}
+    {{ k8s_app_deployment }}={{ locatic_image_name }}
   changed_when: true
 
 - name: Appliquer les manifests Nginx (Kustomize)
-  ansible.builtin.command:
-    cmd: "kubectl apply -k {{ k8s_nginx_overlay }}"
+  ansible.builtin.command: kubectl apply -k "{{ k8s_nginx_overlay }}"
+  register: apply_nginx
+  changed_when: "'configured' in apply_nginx.stdout or 'created' in apply_nginx.stdout"
+
+- name: Assurer le namespace monitoring
+  when: deploy_monitoring | bool
+  ansible.builtin.shell: "kubectl create namespace {{ monitoring_namespace }} --dry-run=client -o yaml | kubectl apply -f -"
   changed_when: true
 
 - name: Creer le Secret Grafana (non versionne)
   when: deploy_monitoring | bool
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: grafana-admin-secret
-        namespace: "{{ monitoring_namespace }}"
-        labels:
-          app.kubernetes.io/name: grafana
-          app.kubernetes.io/component: monitoring
-      type: Opaque
-      stringData:
-        GF_SECURITY_ADMIN_USER: "{{ grafana_admin_user }}"
-        GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+  ansible.builtin.shell: |
+    kubectl -n {{ monitoring_namespace }} create secret generic grafana-admin-secret \
+      --from-literal=GF_SECURITY_ADMIN_USER='{{ grafana_admin_user }}' \
+      --from-literal=GF_SECURITY_ADMIN_PASSWORD='{{ grafana_admin_password }}' \
+      --dry-run=client -o yaml | kubectl apply -f -
+  changed_when: true
+  no_log: true
 
 - name: Appliquer la stack de monitoring (Kustomize)
   when: deploy_monitoring | bool
-  ansible.builtin.command:
-    cmd: "kubectl apply -k {{ k8s_monitoring_overlay }}"
-  changed_when: true
+  ansible.builtin.command: kubectl apply -k "{{ k8s_monitoring_overlay }}"
+  register: apply_mon
+  changed_when: "'configured' in apply_mon.stdout or 'created' in apply_mon.stdout"
 
 - name: Attendre que le deploiement de l'app soit disponible
-  kubernetes.core.k8s_info:
-    kind: Deployment
-    name: "{{ k8s_app_deployment }}"
-    namespace: "{{ k8s_namespace }}"
-    wait: true
-    wait_condition:
-      type: Available
-      status: "True"
-    wait_timeout: 180
+  ansible.builtin.command:
+    cmd: >-
+      kubectl -n {{ k8s_namespace }} rollout status
+      deployment/{{ k8s_app_deployment }} --timeout=180s
+  changed_when: false
 
 - name: Attendre que le deploiement nginx soit disponible
-  kubernetes.core.k8s_info:
-    kind: Deployment
-    name: "{{ k8s_nginx_deployment }}"
-    namespace: "{{ k8s_namespace }}"
-    wait: true
-    wait_condition:
-      type: Available
-      status: "True"
-    wait_timeout: 120
+  ansible.builtin.command:
+    cmd: >-
+      kubectl -n {{ k8s_namespace }} rollout status
+      deployment/{{ k8s_nginx_deployment }} --timeout=120s
+  changed_when: false

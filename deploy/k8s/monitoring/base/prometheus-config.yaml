@@ -18,7 +18,7 @@ data:
                 - alertmanager:9093
 
     rule_files:
-      - "/etc/prometheus/rules/alerts.yml"
+      - "/etc/prometheus/alerts.yml"
 
     scrape_configs:
       # Auto-supervision Prometheus
@@ -102,7 +102,7 @@ data:
             source_labels: [__meta_kubernetes_node_name]
             target_label: node
 
-  rules/alerts.yml: |
+  alerts.yml: |
     groups:
       - name: app-alerts
         rules:

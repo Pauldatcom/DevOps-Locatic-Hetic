@@ -46,10 +46,10 @@ DevOps ajoute a l'application :
 ├── deploy/k8s/          # Manifests Kubernetes (app + Nginx + monitoring)
 ├── infra/
 │   ├── terraform/       # Infrastructure locale (namespace, stockage, environnements)
-│   ├── ansible/         # Orchestration du deploiement local
-│   └── kubernetes/      # Pointeur legacy -> voir deploy/k8s/
-├── monitoring/          # Configuration Prometheus, Grafana, Alertmanager
-└── docs/                # Documentation detaillee (architecture, ci-cd, terraform, ansible, kubernetes, monitoring, exploitation...)
+│   └── ansible/         # Orchestration du deploiement local (role k8s_deploy)
+├── monitoring/          # Config Prometheus/Grafana pour docker-compose (hors cluster)
+├── scripts/             # deploy / verify / setup-prereqs (Windows + Linux)
+└── docs/                # Documentation detaillee (architecture, ci-cd, terraform, ansible, kubernetes, monitoring...)
 ```
 
 ## 4. Modele de donnees (relations)

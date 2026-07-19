@@ -11,12 +11,8 @@ infra/ansible/
 ├── inventory.yml
 ├── requirements.yml
 ├── deploy-k8s.yml             # Playbook principal
-├── site.yml                   # Legacy (VM) - non utilise pour K8s
-├── bootstrap-python.yml       # Legacy
 └── roles/
-    ├── k8s_deploy/            # Build image + apply deploy/k8s/*
-    ├── base/                  # Legacy VM
-    └── ngnix/                 # Legacy VM (typo historique du role)
+    └── k8s_deploy/            # Build image + apply deploy/k8s/*
 ```
 
 ## Prerequis
@@ -37,7 +33,7 @@ pip install kubernetes
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `locatic_image_name` | `locatic:latest` | Image buildée localement |
+| `locatic_image_name` | `ghcr.io/pauldatcom/locatic:local-...` | Image buildée localement (tag unique) |
 | `locatic_docker_context` | racine du repo | Chemin portable via `playbook_dir` |
 | `k8s_cluster_type` | `minikube` | `minikube` ou `kind` |
 | `kind_cluster_name` | `kind` | Nom du cluster kind |
@@ -78,8 +74,3 @@ kubectl port-forward -n locatic-staging svc/locatic-nginx 8888:80
 curl http://localhost:8888/health
 curl http://localhost:8888/metrics
 ```
-
-## Roles legacy
-
-`base`, `ngnix`, `site.yml` et `bootstrap-python.yml` viennent d'un ancien
-parcours VM. Ils ne sont **pas** utilises pour le deploiement Kubernetes Locatic.

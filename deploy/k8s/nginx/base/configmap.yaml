@@ -20,6 +20,13 @@ data:
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
+        # Sonde locale (ne depend pas du backend) pour readiness/liveness kubelet.
+        location = /ready {
+            access_log off;
+            default_type text/plain;
+            return 200 'ok';
+        }
+
         location /health {
             proxy_pass http://locatic:8080/health;
             proxy_http_version 1.1;
