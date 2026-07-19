@@ -1,42 +1,78 @@
-# Helm
+# Helm — Locatic
 
 ## Statut
 
-Le **bonus Helm n'est pas realise** dans cette version du projet.
+Bonus **realise** : chart Helm configurable pour l'application + Nginx,
+installe/mis a jour par **Ansible** (`helm upgrade --install`).
 
-Le deploiement Kubernetes est gere avec :
+Le monitoring (Prometheus/Grafana) reste en manifests Kustomize
+(`deploy/k8s/monitoring/`).
 
-- manifests bruts + **Kustomize** (`deploy/k8s/{app,nginx,monitoring}`)
-- orchestration **Ansible** (`infra/ansible/deploy-k8s.yml`)
-
-Le provider Helm est declare dans Terraform (`hashicorp/helm`) comme reserve pour
-une eventuelle evolution, mais **aucune release Helm n'est installee**.
-
-## Si le bonus etait ajoute plus tard
-
-Structure envisagee :
+## Structure
 
 ```txt
 deploy/helm/locatic/
 ├── Chart.yaml
-├── values.yaml
-├── values-dev.yaml
-├── values-prod.yaml
+├── values.yaml              # Defauts
+├── values-dev.yaml          # namespace locatic-staging, log debug
+├── values-prod.yaml         # namespace locatic-prod
 └── templates/
-    ├── deployment.yaml
-    ├── service.yaml
-    ├── configmap.yaml
-    └── ingress-or-nginx.yaml
+    ├── _helpers.tpl
+    ├── app-configmap.yaml
+    ├── app-deployment.yaml
+    ├── app-service.yaml
+    ├── nginx-configmap.yaml
+    ├── nginx-deployment.yaml
+    └── nginx-service.yaml
 ```
 
-Procedure type :
+## Valeurs configurables
+
+| Cle | Description |
+| --- | --- |
+| `image.repository` / `image.tag` | Image Locatic |
+| `app.replicas` | Replicas (1 pour SQLite RWO) |
+| `app.logLevel` | Niveau de log |
+| `app.pvcName` | PVC SQLite (creee par Terraform) |
+| `nginx.serviceType` | NodePort / ClusterIP |
+| `nginx.enabled` | Activer le reverse proxy |
+
+## Procedure
 
 ```bash
+# Lint
 helm lint deploy/helm/locatic
+
+# Install / upgrade (dev)
 helm upgrade --install locatic deploy/helm/locatic \
-  -n locatic-staging -f deploy/helm/locatic/values-dev.yaml
+  -n locatic-staging \
+  -f deploy/helm/locatic/values-dev.yaml \
+  --set image.repository=ghcr.io/pauldatcom/locatic \
+  --set image.tag=latest \
+  --wait
+
+# Statut / historique
+helm status locatic -n locatic-staging
+helm history locatic -n locatic-staging
+
+# Rollback
 helm rollback locatic 1 -n locatic-staging
 ```
 
-Ansible pourrait alors appeler `helm upgrade --install` a la place de
-`kubectl apply -k`.
+## Ansible
+
+Par defaut `use_helm: true` dans `roles/k8s_deploy/defaults/main.yml`.
+
+```bash
+cd infra/ansible
+ansible-playbook -i inventory.yml deploy-k8s.yml
+# Force Kustomize a la place de Helm :
+ansible-playbook -i inventory.yml deploy-k8s.yml -e use_helm=false
+```
+
+## Relation avec Kustomize
+
+- **Helm** : chemin principal pour app + Nginx (bonus).
+- **Kustomize** (`deploy/k8s/app`, `deploy/k8s/nginx`) : conserve comme fallback
+  et reference manifeste.
+- La PVC SQLite reste geree par **Terraform** (pas dans le chart).

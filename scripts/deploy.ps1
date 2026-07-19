@@ -22,6 +22,10 @@ $NsApp = if ($EnvName -eq "prod") { "locatic-prod" } else { "locatic-staging" }
 $AppOverlay = Join-Path $Root "deploy\k8s\app\overlays\$EnvName"
 $NginxOverlay = Join-Path $Root "deploy\k8s\nginx\overlays\$EnvName"
 $MonOverlay = Join-Path $Root "deploy\k8s\monitoring\overlays\$EnvName"
+$HelmChart = Join-Path $Root "deploy\helm\locatic"
+$HelmValues = Join-Path $HelmChart "values-$EnvName.yaml"
+$ImageRepo = "ghcr.io/pauldatcom/locatic"
+$UseHelm = [bool](Get-Command helm -ErrorAction SilentlyContinue)
 
 Write-Host "==> Ensure cluster context ($ClusterType)"
 if ($ClusterType -eq "minikube") {
@@ -61,11 +65,24 @@ finally {
     Pop-Location
 }
 
-Write-Host "==> Apply manifests (kubectl + Kustomize)"
-kubectl apply -k $AppOverlay
-kubectl apply -k $NginxOverlay
-# Manifests referencent :latest ; on force le tag local charge dans le cluster.
-kubectl -n $NsApp set image deployment/locatic "locatic=$Image"
+if ($UseHelm) {
+    Write-Host "==> Deploy app + Nginx via Helm"
+    helm upgrade --install locatic $HelmChart `
+        --namespace $NsApp `
+        --create-namespace `
+        -f $HelmValues `
+        --set "image.repository=$ImageRepo" `
+        --set "image.tag=$ImageTag" `
+        --set "namespace=$NsApp" `
+        --wait --timeout 180s
+} else {
+    Write-Host "==> Helm absent : fallback Kustomize (app + nginx)"
+    kubectl apply -k $AppOverlay
+    kubectl apply -k $NginxOverlay
+    kubectl -n $NsApp set image deployment/locatic "locatic=$Image"
+}
+
+Write-Host "==> Monitoring (Kustomize)"
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n monitoring create secret generic grafana-admin-secret `
     --from-literal=GF_SECURITY_ADMIN_USER=admin `

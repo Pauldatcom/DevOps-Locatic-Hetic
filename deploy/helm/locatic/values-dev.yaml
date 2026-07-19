@@ -1,0 +1,11 @@
+namespace: locatic-staging
+
+image:
+  tag: latest
+
+app:
+  replicas: 1
+  logLevel: debug
+
+nginx:
+  serviceType: NodePort

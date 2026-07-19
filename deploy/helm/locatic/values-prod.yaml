@@ -1,0 +1,11 @@
+namespace: locatic-prod
+
+image:
+  tag: latest
+
+app:
+  replicas: 1
+  logLevel: info
+
+nginx:
+  serviceType: NodePort

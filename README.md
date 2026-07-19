@@ -104,10 +104,11 @@ Le pipeline GitHub **ne déploie pas** sur minikube. Le déploiement se fait en 
 ├── Locatic/               # Application ASP.NET Core MVC + tests xUnit
 ├── Dockerfile             # Image runtime (USER 999, volume /data)
 ├── docker-compose.yml     # Monitoring hors cluster (optionnel / dev rapide)
-├── deploy/k8s/            # Manifests Kustomize : app, nginx, monitoring
+├── deploy/k8s/            # Manifests Kustomize : monitoring (+ fallback app/nginx)
+├── deploy/helm/locatic/   # Chart Helm app + Nginx (utilise par Ansible)
 ├── infra/
 │   ├── terraform/         # Namespaces + PVC (env dev / prod)
-│   └── ansible/           # Playbook deploy-k8s.yml (role k8s_deploy)
+│   └── ansible/           # Playbook deploy-k8s.yml (Helm + monitoring)
 ├── monitoring/            # Config Prometheus/Grafana pour docker-compose
 ├── scripts/               # setup / deploy / verify (Windows + Linux)
 └── docs/                  # Documentation détaillée + preuves
@@ -226,7 +227,7 @@ kubectl exec -n locatic-staging deploy/locatic -- ls -la /data/agence.db
 | [`docs/kubernetes.md`](docs/kubernetes.md) | Manifests app / Nginx |
 | [`docs/monitoring.md`](docs/monitoring.md) | Prometheus / Grafana / alertes |
 | [`docs/exploitation.md`](docs/exploitation.md) | Vérifs, logs, rollback |
-| [`docs/helm.md`](docs/helm.md) | Bonus Helm (non réalisé) |
+| [`docs/helm.md`](docs/helm.md) | Chart Helm + rollback |
 | [`docs/preuves/`](docs/preuves/) | Captures et preuves de rendu |
 
 ---

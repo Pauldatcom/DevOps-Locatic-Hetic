@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: locatic-config
+  labels:
+    {{- include "locatic.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app
+data:
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://+:{{ .Values.app.port }}
+  LOG_LEVEL: {{ .Values.app.logLevel | quote }}
+  SQLITE_PATH: {{ .Values.app.sqlitePath | quote }}
+  ConnectionStrings__DefaultConnection: Data Source={{ .Values.app.sqlitePath }}
